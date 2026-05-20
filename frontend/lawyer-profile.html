@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lawyer Profile | LegalGuide</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="fabulous.css"/>
+  <link rel="stylesheet" href="lawyers.css"/>
+</head>
+<body data-page="lawyer-profile" data-title-key="lawyerProfilePageTitle">
+
+<nav class="navbar glass">
+  <div class="logo">⚖ LegalGuide</div>
+  <div class="nav-links">
+    <a href="index.html" data-key="home">Home</a>
+    <a href="lawyers.html" data-key="lawyers">Lawyers</a>
+    <a href="index.html#contact" data-key="contact">Contact</a>
+    <a id="loginNavLink" href="auth.html" data-key="login">Login</a>
+    <a id="signupNavLink" href="auth.html" data-key="signup">Sign Up</a>
+    <a id="navDashboardLink" class="hidden" href="user-dashboard.html" data-key="dashboard">Dashboard</a>
+    <a id="navLogoutLink" class="hidden" href="#" onclick="logout(); return false;" data-key="logout">Logout</a>
+  </div>
+  <div class="actions">
+    <button type="button" onclick="toggleTheme()">🌙</button>
+    <button type="button" onclick="toggleLang()">🌐</button>
+  </div>
+</nav>
+
+<main class="lawyer-profile-page container">
+  <a href="lawyers.html" class="lawyer-profile-back" data-i18n="backToLawyers">← Back to lawyers</a>
+  <div id="lawyerProfilePageRoot">
+    <p class="lawyers-empty" data-i18n="loadingLawyers">Loading lawyers...</p>
+  </div>
+</main>
+
+<div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+  <div class="modal-content booking-modal-content">
+    <h3 id="bookingTitle" data-i18n="bookTitle">Book a Consultation</h3>
+    <div class="booking-modal-body">
+      <div id="bookingLawyerCard" class="hidden"></div>
+      <p id="selectedLawyer" class="booking-modal-lawyer-name hidden"></p>
+      <input id="bookerName" placeholder="Your name" aria-label="Your name">
+      <input id="bookerEmail" placeholder="Your email" aria-label="Your email">
+      <div id="bookMeetingTypeWrap" class="hidden booking-modal-field">
+        <label for="bookMeetingType" class="booking-field-label" data-i18n="meetingTypeLabel">Meeting type</label>
+        <select id="bookMeetingType" aria-label="Meeting type"></select>
+      </div>
+      <div class="booking-modal-field">
+        <label for="bookSlot" class="booking-field-label" data-i18n="pickTime">Pick a time</label>
+        <select id="bookSlot" aria-label="Available time"></select>
+      </div>
+      <textarea id="bookNote" placeholder="Notes (optional)" aria-label="Notes"></textarea>
+    </div>
+    <div class="booking-modal-actions">
+      <button id="bookSubmit" class="full-btn" type="button" onclick="submitBooking()" data-i18n="confirm">Confirm</button>
+      <button type="button" onclick="closeBooking()" class="full-btn booking-modal-cancel" data-i18n="cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

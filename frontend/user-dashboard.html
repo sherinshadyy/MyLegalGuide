@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard | LegalGuide</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="lawyers.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dash-layout" data-dash="user" data-title-key="userDashTitle">
+
+<aside class="sidebar dash-sidebar">
+  <div class="dash-sidebar-brand">⚖ LegalGuide</div>
+  <div class="dash-sidebar-group">Client</div>
+  <button type="button" id="homeNavBtn" class="sidebar-nav-btn" onclick="window.location.href='index.html'">
+    <i data-lucide="house"></i> <span data-i18n="navBrowseSite">Browse site</span>
+  </button>
+  <button type="button" id="appointmentsNavBtn" class="sidebar-nav-btn active" onclick="showSection('appointments')">
+    <i data-lucide="calendar"></i> <span data-i18n="navAppointments">Appointments</span>
+  </button>
+  <button type="button" id="profileNavBtn" class="sidebar-nav-btn" onclick="showSection('profile')">
+    <i data-lucide="user"></i> <span data-i18n="navProfile">Profile</span>
+  </button>
+  <button type="button" id="settingsNavBtn" class="sidebar-nav-btn" onclick="showSection('settings')">
+    <i data-lucide="settings"></i> <span data-i18n="navSettings">Settings</span>
+  </button>
+  <button type="button" id="chatNavBtn" class="sidebar-nav-btn" onclick="showSection('appointmentChat')">
+    <i data-lucide="messages-square"></i> <span data-i18n="navChat">Chat</span>
+    <span id="chatUnreadBadge" class="hidden" style="margin-left:auto;background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700">0</span>
+  </button>
+  <div class="sidebar-spacer"></div>
+  <button type="button" class="sidebar-nav-btn logout-btn" onclick="logout()">
+    <i data-lucide="log-out"></i> <span data-i18n="navLogout">Logout</span>
+  </button>
+</aside>
+
+<main class="dash-content">
+  <header class="dash-content-header">
+    <div class="dash-content-header-text">
+      <h1 class="dash-page-title" data-i18n="userDashTitle">My Dashboard</h1>
+      <p class="dash-page-sub" data-i18n="userDashSub">Book lawyers, manage appointments, and message your lawyer.</p>
+    </div>
+    <div class="dash-topbar-actions" role="toolbar" aria-label="Language and theme">
+      <button type="button" class="dash-icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+      <button type="button" class="dash-icon-btn" onclick="toggleLang()" aria-label="Toggle language" title="Toggle language">🌐</button>
+    </div>
+  </header>
+
+  <div id="appointments" class="dash-box">
+    <h2 data-i18n="myAppointments">My Appointments</h2>
+    <div id="userReviewPrompt" class="review-prompt-wrap" aria-live="polite"></div>
+    <div id="appointmentStatusMsg" class="appointment-cancelled-banner hidden"></div>
+    <div id="userAppointmentsList">No appointments yet.</div>
+    <p class="appointments-footer-hint">
+      <a href="lawyers.html" class="dash-browse-link" data-i18n="browseLawyersLink">Browse lawyers</a> <span data-i18n="browseLawyersHint">to book a consultation.</span>
+    </p>
+  </div>
+
+  <div id="profile" class="dash-box hidden">
+    <h2 data-i18n="myProfile">My Profile</h2>
+    <p class="dash-page-sub" style="margin:0 0 18px" data-i18n="myProfileSub">Your account details.</p>
+    <div class="dash-card">
+      <p class="dash-card-title" data-i18n="personalInfo">Personal info</p>
+      <div class="dash-form-row">
+        <label for="accountNameInput" data-i18n-label="displayName">Display name</label>
+        <input id="accountNameInput" style="max-width:400px">
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="saveAccountProfile()" data-i18n="saveName">Save name</button>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title" data-i18n="accountSummary">Account summary</p>
+      <div id="profileInfo" class="dash-muted-text">Loading...</div>
+    </div>
+  </div>
+
+  <div id="appointmentChat" class="dash-box hidden">
+    <h2 data-i18n="appointmentChat">Appointment Chat</h2>
+    <div class="dash-chat-layout">
+      <div class="dash-chat-panel">
+        <div class="dash-chat-panel-head" data-i18n="conversations">Conversations</div>
+        <div id="chatConversationsList" class="dash-chat-panel-body"></div>
+      </div>
+      <div class="dash-chat-main">
+        <p id="chatPartnerLabel" class="dash-chat-partner-label" data-i18n="chooseConversation">Choose a conversation.</p>
+        <div id="chatPartnerCard" class="chat-partner-card hidden"></div>
+        <div id="appointmentChatBody" class="dash-chat-messages"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="appointmentChatInput" data-i18n="typeMessage" placeholder="Type your message…" style="flex:1;margin:0">
+          <button type="button" onclick="sendAppointmentMessage()" data-i18n="sendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings" class="dash-box hidden">
+    <h2 data-i18n="settingsTitle">Settings</h2>
+    <div class="dash-card">
+      <p class="dash-card-title" data-i18n="contactInfo">Contact</p>
+      <div class="dash-form-row">
+        <label for="settingsEmailInput" data-i18n-label="emailLabel">Email</label>
+        <input id="settingsEmailInput" type="email" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="settingsPhoneInput" data-i18n-label="phoneLabel">Phone</label>
+        <input id="settingsPhoneInput" type="tel" placeholder="e.g. 01012345678" style="max-width:400px">
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="saveAccountContact()" data-i18n="saveContact">Save contact</button>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title" data-i18n="passwordTitle">Password</p>
+      <div class="dash-form-row">
+        <label for="settingsCurrentPassword" data-i18n-label="currentPassword">Current password</label>
+        <input id="settingsCurrentPassword" type="password" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="settingsNewPassword" data-i18n-label="newPassword">New password</label>
+        <input id="settingsNewPassword" type="password" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="settingsConfirmPassword" data-i18n-label="confirmPassword">Confirm new password</label>
+        <input id="settingsConfirmPassword" type="password" style="max-width:400px">
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="changeAccountPassword()" data-i18n="changePassword">Change password</button>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title" data-i18n="appearance">Appearance</p>
+      <button type="button" onclick="toggleTheme()" data-i18n="toggleTheme">Toggle theme</button>
+    </div>
+  </div>
+</main>
+
+<script src="script.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

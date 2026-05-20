@@ -1,0 +1,50 @@
+
+/* SAFE FABULOUS OVERLAY - DOES NOT BREAK FEATURES */
+
+body {
+  background: linear-gradient(135deg, #F0E8DC, #FAF7F2);
+  font-family: 'Poppins', Arial, sans-serif;
+  color: #2C2419;
+}
+
+/* containers */
+div, section, main {
+  box-sizing: border-box;
+}
+
+/* cards */
+.card, .box, .panel {
+  background: #FFFCF7;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(44, 36, 25, 0.08);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* buttons */
+button, input[type="submit"] {
+  background: linear-gradient(90deg, #6B5344, #A0826D);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+button:hover, input[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(107, 83, 68, 0.35);
+}
+
+/* inputs */
+input, select, textarea {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #D4C4B0;
+}
+
+/* headings */
+h1, h2, h3 {
+  font-weight: 700;
+}

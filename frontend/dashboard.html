@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting…</title>
+  <script src="script.js"></script>
+</head>
+<body>
+<script>
+(function(){
+  const token = localStorage.getItem('lg_token');
+  if(!token){ window.location.replace('auth.html'); return; }
+  let obj = null;
+  try{ obj = JSON.parse(localStorage.getItem('lg_user_obj') || 'null'); }catch(e){}
+  const role = String((obj && obj.role) || '').toLowerCase();
+  if(role.startsWith('admin')) window.location.replace('admin.html');
+  else if(role.startsWith('law')) window.location.replace('lawyer-dashboard.html');
+  else window.location.replace('user-dashboard.html');
+})();
+</script>
+</body>
+</html>

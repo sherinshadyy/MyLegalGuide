@@ -1,0 +1,2 @@
+# Same as requirements.txt — use: pip install -r requirements.txt
+-r requirements.txt

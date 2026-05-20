@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Legal Guide | Home</title>
+
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="fabulous.css"/>
+  <link rel="stylesheet" href="lawyers.css"/>
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar glass">
+  <div class="logo">⚖ LegalGuide</div>
+
+  <div class="nav-links">
+    <a href="#home" data-key="home">Home</a>
+    <a href="lawyers.html" data-key="lawyers">Lawyers</a>
+    <a href="#contact" data-key="contact">Contact</a>
+    <a id="navDashboardLink" href="user-dashboard.html" data-key="dashboard">Dashboard</a>
+    <button type="button" onclick="logout()" style="background:#ef4444;color:#fff;border:1px solid #dc2626;border-radius:8px;padding:6px 10px;cursor:pointer" data-i18n="logout">Logout</button>
+  </div>
+
+  <form class="nav-search" role="search" onsubmit="event.preventDefault(); performSearch();">
+    <input id="searchInput" aria-label="Search" placeholder="Search lawyers or ask...">
+    <button id="searchBtn" type="submit" aria-label="Search" data-key="searchButton">Search</button>
+  </form>
+
+  <div class="actions">
+    <button onclick="toggleTheme()">🌙</button>
+    <button onclick="toggleLang()">🌐</button>
+  </div>
+</nav>
+
+<section id="lawyerHomeBanner" class="container hidden">
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-bottom:8px" data-i18n="lawyerWorkspace">Lawyer Workspace</h2>
+    <p data-i18n="lawyerWorkspaceSub">Manage your availability, documents, client requests, and appointment chats from your dashboard.</p>
+    <button type="button" id="lawyerDashOpenBtn" style="margin-top:8px" data-i18n="openDashboard">Open Dashboard</button>
+  </div>
+</section>
+
+<!-- ================= HERO ================= -->
+<section id="home" class="hero-bg fade-in">
+  <div class="hero-content glass slide-up">
+    <h1 data-key="heroTitle">Legal Help Made Simple</h1>
+    <p data-key="heroText">
+      Connect with lawyers or ask our AI assistant instantly
+    </p>
+    <button data-key="explore" onclick="scrollToSection('lawyers')">
+      Explore
+    </button>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat">
+    <i data-lucide="briefcase"></i>
+    <h3>120+</h3>
+    <p>Lawyers</p>
+  </div>
+
+  <div class="stat">
+    <i data-lucide="users"></i>
+    <h3>3,000+</h3>
+    <p>Clients</p>
+  </div>
+
+  <div class="stat">
+    <i data-lucide="star"></i>
+    <h3>98%</h3>
+    <p>Success Rate</p>
+  </div>
+</section>
+
+<!-- ================= LAWYERS ================= -->
+<section id="lawyers" class="container">
+  <div class="lawyers-preview-bar">
+    <div>
+      <h2 class="title" data-key="lawyers">Personal Status Lawyers</h2>
+      <p style="color:#6B5E50;margin:6px 0 0">Find the right specialist for your case.</p>
+    </div>
+    <a href="lawyers.html"><button type="button" data-i18n="browseAllLawyers">Browse all lawyers</button></a>
+  </div>
+  <div id="lawyersPreview" class="lawyers-directory-grid lawyers-preview-grid"></div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<section id="contact" class="container">
+  <h2 class="title" data-key="contactTitle">Contact</h2>
+
+  <div class="card">
+    <input id="contactName" placeholder="Name">
+    <input id="contactEmail" placeholder="Email">
+    <textarea id="contactMessage" placeholder="Message"></textarea>
+    <button id="contactSend" type="button" data-key="send" onclick="sendContact()">Send</button>
+  </div>
+</section>
+
+<!-- ================= CHAT ================= -->
+<button class="chat-toggle" onclick="toggleChat()">💬</button>
+
+<div class="chatbot hidden" id="chatbot">
+  <div class="chat-layout">
+    <aside class="chat-sidebar" id="chatSidebar">
+      <div class="chat-sidebar-head">
+        <button type="button" class="chat-side-btn" onclick="newAiConversation()" title="New chat">+</button>
+        <span class="chat-sidebar-label">Chats</span>
+      </div>
+      <div class="chat-conv-list" id="chatConversationList"></div>
+    </aside>
+    <div class="chat-main">
+  <div class="chat-header">
+    <span id="chatTitleLabel">AI Assistant</span>
+    <div class="chat-header-actions">
+      <button type="button" class="chat-mini-btn" onclick="toggleChatExpand()" title="Expand chat">⤢</button>
+      <button type="button" class="chat-mini-btn" onclick="toggleChat()" title="Close chat">✖</button>
+    </div>
+  </div>
+
+      <div class="chat-body" id="chatBody"></div>
+
+      <div class="chat-toolbar">
+        <label class="chat-upload-label" title="Upload legal document (TXT or PDF)">
+          📎
+          <input type="file" id="chatDocUpload" accept=".txt,.pdf,text/plain,application/pdf" hidden onchange="uploadLegalDocument(event)">
+        </label>
+        <span class="chat-toolbar-hint">TXT / PDF (مسحوح مدعوم)</span>
+      </div>
+
+      <div class="chat-input">
+        <button type="button" id="chatVoiceBtn" class="chat-voice-btn" onclick="toggleAiVoiceInput()" aria-label="Voice input" aria-pressed="false" title="Voice input">🎤</button>
+        <textarea id="chatInput" rows="2" placeholder="اسأل سؤالك القانوني..."></textarea>
+        <button type="button" class="chat-send-btn" onclick="sendMsg()" data-i18n="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+  <div class="modal-content booking-modal-content">
+    <h3 id="bookingTitle">Book a Consultation</h3>
+    <div class="booking-modal-body">
+      <div id="bookingLawyerCard" class="hidden"></div>
+      <p id="selectedLawyer" class="booking-modal-lawyer-name hidden"></p>
+      <input id="bookerName" placeholder="Your name" aria-label="Your name">
+      <input id="bookerEmail" placeholder="Your email" aria-label="Your email">
+      <div id="bookMeetingTypeWrap" class="hidden booking-modal-field">
+        <label for="bookMeetingType" class="booking-field-label" data-i18n="meetingTypeLabel">Meeting type</label>
+        <select id="bookMeetingType" aria-label="Meeting type"></select>
+      </div>
+      <div class="booking-modal-field">
+        <label for="bookSlot" class="booking-field-label" data-i18n="pickTime">Pick a time offered by this lawyer</label>
+        <select id="bookSlot" aria-label="Lawyer availability slots"></select>
+      </div>
+      <textarea id="bookNote" placeholder="Notes (optional)" aria-label="Notes"></textarea>
+    </div>
+    <div class="booking-modal-actions">
+      <button id="bookSubmit" class="full-btn" onclick="submitBooking()">Confirm</button>
+      <button type="button" onclick="closeBooking()" class="full-btn booking-modal-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script src="ai-voice.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
+
+</body>
+</html>

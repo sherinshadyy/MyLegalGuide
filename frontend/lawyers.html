@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Find a Lawyer | LegalGuide</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="fabulous.css"/>
+  <link rel="stylesheet" href="lawyers.css"/>
+</head>
+<body data-page="lawyers" data-title-key="lawyersPageTitle">
+
+<nav class="navbar glass">
+  <div class="logo">⚖ LegalGuide</div>
+  <div class="nav-links">
+    <a href="index.html" data-key="home">Home</a>
+    <a href="lawyers.html" data-key="lawyers">Lawyers</a>
+    <a href="index.html#contact" data-key="contact">Contact</a>
+    <a id="loginNavLink" href="auth.html" data-key="login">Login</a>
+    <a id="signupNavLink" href="auth.html" data-key="signup">Sign Up</a>
+    <a id="navDashboardLink" class="hidden" href="user-dashboard.html" data-key="dashboard">Dashboard</a>
+    <a id="navLogoutLink" class="hidden" href="#" onclick="logout(); return false;" data-key="logout">Logout</a>
+  </div>
+  <div class="actions">
+    <button type="button" onclick="toggleTheme()">🌙</button>
+    <button type="button" onclick="toggleLang()">🌐</button>
+  </div>
+</nav>
+
+<header class="lawyers-page-hero">
+  <h1 data-i18n="lawyersPageTitle">Personal Status Lawyers</h1>
+  <p data-i18n="lawyersPageSub">Browse approved specialists, filter by specialty, gender, and consultation fee, then book a time that fits you.</p>
+</header>
+
+<section class="lawyers-filters container" aria-label="Lawyer filters">
+  <div>
+    <label for="filterSpecialty" data-i18n-label="filterSpecialty">Specialty</label>
+    <select id="filterSpecialty">
+      <option value="">All specialties</option>
+    </select>
+  </div>
+  <div>
+    <label for="filterGender" data-i18n-label="filterGender">Gender</label>
+    <select id="filterGender">
+      <option value="" data-i18n="anyGender">Any</option>
+      <option value="male" data-i18n="genderMale">Male</option>
+      <option value="female" data-i18n="genderFemale">Female</option>
+    </select>
+  </div>
+  <div>
+    <label for="filterMinPrice" data-i18n-label="minFee">Min. lawyer fee from (EGP)</label>
+    <input type="number" id="filterMinPrice" min="0" step="50" placeholder="e.g. 200">
+  </div>
+  <div>
+    <label for="filterMaxPrice" data-i18n-label="maxFee">Max. lawyer fee up to (EGP)</label>
+    <input type="number" id="filterMaxPrice" min="0" step="50" placeholder="e.g. 600">
+  </div>
+  <div class="lawyers-filters-actions">
+    <button type="button" onclick="applyLawyerFilters()" data-i18n="applyFilters">Apply filters</button>
+    <button type="button" onclick="resetLawyerFilters()" style="background:#E4D9CC;color:#2C2419" data-i18n="resetFilters">Reset</button>
+  </div>
+</section>
+
+<section class="lawyers-directory">
+  <div id="lawyersDirectory" class="lawyers-directory-grid">
+    <p class="lawyers-empty">Loading lawyers...</p>
+  </div>
+</section>
+
+<div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+  <div class="modal-content booking-modal-content">
+    <h3 id="bookingTitle" data-i18n="bookTitle">Book a Consultation</h3>
+    <div class="booking-modal-body">
+      <div id="bookingLawyerCard" class="hidden"></div>
+      <p id="selectedLawyer" class="booking-modal-lawyer-name hidden"></p>
+      <input id="bookerName" placeholder="Your name" aria-label="Your name">
+      <input id="bookerEmail" placeholder="Your email" aria-label="Your email">
+      <div id="bookMeetingTypeWrap" class="hidden booking-modal-field">
+        <label for="bookMeetingType" class="booking-field-label" data-i18n="meetingTypeLabel">Meeting type</label>
+        <select id="bookMeetingType" aria-label="Meeting type"></select>
+      </div>
+      <div class="booking-modal-field">
+        <label for="bookSlot" class="booking-field-label" data-i18n="pickTime">Pick a time</label>
+        <select id="bookSlot" aria-label="Available time"></select>
+      </div>
+      <textarea id="bookNote" placeholder="Notes (optional)" aria-label="Notes"></textarea>
+    </div>
+    <div class="booking-modal-actions">
+      <button id="bookSubmit" class="full-btn" type="button" onclick="submitBooking()" data-i18n="confirm">Confirm</button>
+      <button type="button" onclick="closeBooking()" class="full-btn booking-modal-cancel" data-i18n="cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

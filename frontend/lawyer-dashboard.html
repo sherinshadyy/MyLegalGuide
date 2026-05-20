@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lawyer Dashboard | LegalGuide</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="lawyers.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dash-layout" data-dash="lawyer" data-title-key="lawyerDashTitle">
+
+<aside class="sidebar dash-sidebar">
+  <div class="dash-sidebar-brand">⚖ LegalGuide</div>
+  <div class="dash-sidebar-group" data-i18n="lawyer">Lawyer</div>
+  <button type="button" id="homeNavBtn" class="sidebar-nav-btn" onclick="window.location.href='index.html'">
+    <i data-lucide="house"></i> <span data-i18n="navBrowseSite">Browse site</span>
+  </button>
+  <button type="button" id="lawyerBookingsNavBtn" class="sidebar-nav-btn active" onclick="showSection('lawyerBookings')">
+    <i data-lucide="clipboard-list"></i> <span data-i18n="navClientRequests">Client Requests</span>
+  </button>
+  <button type="button" id="profileNavBtn" class="sidebar-nav-btn" onclick="showSection('profile')">
+    <i data-lucide="user"></i> <span data-i18n="navProfile">Profile</span>
+  </button>
+  <button type="button" id="lawyerProfileNavBtn" class="sidebar-nav-btn" onclick="showSection('lawyerProfile')">
+    <i data-lucide="calendar-clock"></i> <span data-i18n="navAvailability">Availability</span>
+  </button>
+  <button type="button" id="settingsNavBtn" class="sidebar-nav-btn" onclick="showSection('settings')">
+    <i data-lucide="settings"></i> <span data-i18n="navSettings">Settings</span>
+  </button>
+  <button type="button" id="chatNavBtn" class="sidebar-nav-btn" onclick="showSection('appointmentChat')">
+    <i data-lucide="messages-square"></i> <span data-i18n="navChat">Chat</span>
+    <span id="chatUnreadBadge" class="hidden" style="margin-left:auto;background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700">0</span>
+  </button>
+  <div class="sidebar-spacer"></div>
+  <button type="button" class="sidebar-nav-btn logout-btn" onclick="logout()">
+    <i data-lucide="log-out"></i> <span data-i18n="navLogout">Logout</span>
+  </button>
+</aside>
+
+<main class="dash-content">
+  <header class="dash-content-header">
+    <div class="dash-content-header-text">
+      <h1 id="dashPageTitle" class="dash-page-title" data-i18n="lawyerDashTitle">Lawyer Dashboard</h1>
+      <p id="dashPageSub" class="dash-page-sub" data-i18n="lawyerDashSub">Manage clients, your public profile, and availability.</p>
+    </div>
+    <div class="dash-topbar-actions" role="toolbar" aria-label="Language and theme">
+      <button type="button" class="dash-icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+      <button type="button" class="dash-icon-btn" onclick="toggleLang()" aria-label="Toggle language" title="Toggle language">🌐</button>
+    </div>
+  </header>
+
+  <div id="lawyerRejectedNotice" class="dash-box hidden"></div>
+
+  <div id="pendingLawyerNotice" class="dash-box hidden">
+    <p style="padding:12px;background:#E8DFD0;border-radius:10px;color:#4A3F32;margin:0" data-i18n="pendingApproval">
+      Your account is awaiting admin approval. Complete your public profile below — clients will see it once approved.
+    </p>
+  </div>
+
+  <div id="serverOutdatedNotice" class="dash-box hidden">
+    <p style="padding:12px;background:#F5D5C8;border-radius:10px;color:#5C2E1F;margin:0;font-weight:600">
+      The app server is out of date or not running. Stop any old server, then run <code>npm start</code> in the <code>frontend</code> folder and open <a href="http://localhost:3000/lawyer-dashboard.html">http://localhost:3000</a>. Until then, experience, location, and booking options cannot be saved or shown to clients.
+    </p>
+  </div>
+
+  <div id="lawyerBookings" class="dash-box">
+    <h2 data-i18n="clientBookings">Client Bookings</h2>
+    <div id="lawyerBookingsList">No bookings yet.</div>
+  </div>
+
+  <div id="profile" class="dash-box hidden">
+    <h2>Lawyer Profile</h2>
+    <p class="dash-page-sub" style="margin:0 0 18px">What clients see on the <a href="lawyers.html">lawyers page</a>.</p>
+
+    <div class="dash-card">
+      <p class="dash-card-title">Photo &amp; name</p>
+      <div class="dash-form-row">
+        <label>Profile photo</label>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <img id="accountProfilePreview" class="profile-avatar-preview hidden" alt="Profile">
+          <div>
+            <input id="accountProfilePicFile" type="file" accept="image/*">
+            <button type="button" onclick="uploadAccountProfilePicture()" style="margin-top:6px">Upload photo</button>
+          </div>
+        </div>
+      </div>
+      <div class="dash-form-row">
+        <label for="accountNameInput">Display name</label>
+        <input id="accountNameInput" style="max-width:400px">
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="saveAccountProfile()">Save name</button>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <p class="dash-card-title">Public profile details (clients see these)</p>
+      <p style="font-size:13px;color:#6B5E50;margin:0 0 12px">Phone, location, experience, consultation length, and meeting types publish immediately — no admin approval.</p>
+      <div class="dash-form-row">
+        <label for="profileLawyerPhone">Phone (shown to clients)</label>
+        <input id="profileLawyerPhone" type="tel" placeholder="e.g. 01012345678" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="profileLawyerExperience">Years of experience</label>
+        <input id="profileLawyerExperience" type="number" min="0" max="80" step="1" placeholder="e.g. 12" style="max-width:160px">
+      </div>
+      <div class="dash-form-row">
+        <label for="profileLawyerLocation">Office location</label>
+        <input id="profileLawyerLocation" type="text" placeholder="City, district, or address clients should know" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="profileConsultationDuration">Consultation duration</label>
+        <select id="profileConsultationDuration" style="max-width:280px">
+          <option value="">— Select duration —</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="45">45 minutes</option>
+          <option value="60">60 minutes</option>
+          <option value="90">90 minutes</option>
+          <option value="120">120 minutes</option>
+        </select>
+      </div>
+      <div class="dash-form-row">
+        <label>Booking options (clients choose when booking)</label>
+        <div class="dash-checkbox-group">
+          <label><input type="checkbox" id="profileBookingOnline" value="online"> Online meeting</label>
+          <label><input type="checkbox" id="profileBookingInPerson" value="in_person"> In-person meeting</label>
+        </div>
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="saveLawyerPublicDetails()">Save public profile details</button>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <p class="dash-card-title">Public practice info</p>
+      <p id="lawyerApprovalHint" class="hidden" style="font-size:13px;color:#9A7B4F;margin:0 0 12px;font-weight:600">Changes to specialty, description, or fees require admin approval before clients see them.</p>
+      <div class="dash-form-row">
+        <label for="profileLawyerSpecialty">Specialty</label>
+        <select id="profileLawyerSpecialty" style="max-width:400px"></select>
+      </div>
+      <div class="dash-form-row">
+        <label for="profileLawyerGender">Gender (shown to clients)</label>
+        <select id="profileLawyerGender" style="max-width:400px">
+          <option value="">Prefer not to say</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div class="dash-form-row">
+        <label for="profileLawyerDescription">Short description</label>
+        <textarea id="profileLawyerDescription" placeholder="Brief headline for listings" style="min-height:70px"></textarea>
+      </div>
+      <div class="dash-form-row">
+        <label for="profileLawyerDetails">Practice details</label>
+        <textarea id="profileLawyerDetails" placeholder="Services, languages, office details…" style="min-height:100px"></textarea>
+      </div>
+      <div class="dash-form-row">
+        <label>Price range (EGP per session)</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:320px">
+          <input id="profileLawyerFeeMin" type="number" min="0" step="50" placeholder="Min" style="flex:1;margin:0">
+          <input id="profileLawyerFeeMax" type="number" min="0" step="50" placeholder="Max" style="flex:1;margin:0">
+        </div>
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="saveLawyerPracticeFromProfile()">Save practice info</button>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <p class="dash-card-title">Account summary</p>
+      <div id="profileInfo" style="color:#6B5E50;line-height:1.7">Loading...</div>
+    </div>
+  </div>
+
+  <div id="lawyerProfile" class="dash-box hidden">
+    <h2>Availability &amp; Documents</h2>
+    <div class="dash-card">
+      <p class="dash-card-title">Availability slots</p>
+      <div class="dash-form-row">
+        <label for="availabilityInput">One slot per line</label>
+        <textarea id="availabilityInput" placeholder="2026-05-01 10:00&#10;2026-05-02 14:30" style="min-height:100px"></textarea>
+      </div>
+      <p style="font-size:13px;color:#6B5E50;margin:0 0 12px">Format: <strong>YYYY-MM-DD HH:MM</strong> (24-hour).</p>
+      <div class="dash-actions">
+        <button type="button" onclick="saveLawyerProfile()">Save availability</button>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title">Credentials</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <input id="documentInput" placeholder="Certificate URL" style="flex:1;min-width:200px;margin:0">
+        <button type="button" onclick="addLawyerDocument()">Add link</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="lawyerDocumentFiles" type="file" multiple>
+        <button type="button" onclick="uploadLawyerDocuments()">Upload files</button>
+      </div>
+      <small style="display:block;color:#6B5E50;margin-top:6px">Max 3 files, 2MB each.</small>
+      <div id="documentsList" style="margin-top:12px">No documents yet.</div>
+    </div>
+  </div>
+
+  <div id="appointmentChat" class="dash-box hidden">
+    <h2>Appointment Chat</h2>
+    <div class="dash-chat-layout">
+      <div class="dash-chat-panel">
+        <div class="dash-chat-panel-head">Conversations</div>
+        <div id="chatConversationsList" class="dash-chat-panel-body"></div>
+      </div>
+      <div class="dash-chat-main">
+        <p id="chatPartnerLabel" class="dash-chat-partner-label">Choose a conversation.</p>
+        <div id="chatPartnerCard" class="chat-partner-card hidden"></div>
+        <div id="appointmentChatBody" class="dash-chat-messages"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="appointmentChatInput" placeholder="Type your message…" style="flex:1;margin:0">
+          <button type="button" onclick="sendAppointmentMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings" class="dash-box hidden">
+    <h2>Settings</h2>
+    <div class="dash-card">
+      <p class="dash-card-title">Contact</p>
+      <div class="dash-form-row">
+        <label for="settingsEmailInput">Email</label>
+        <input id="settingsEmailInput" type="email" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="settingsPhoneInput">Phone</label>
+        <input id="settingsPhoneInput" type="tel" style="max-width:400px">
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="saveAccountContact()">Save contact</button>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title">Password</p>
+      <div class="dash-form-row">
+        <label for="settingsCurrentPassword">Current password</label>
+        <input id="settingsCurrentPassword" type="password" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="settingsNewPassword">New password</label>
+        <input id="settingsNewPassword" type="password" style="max-width:400px">
+      </div>
+      <div class="dash-form-row">
+        <label for="settingsConfirmPassword">Confirm new password</label>
+        <input id="settingsConfirmPassword" type="password" style="max-width:400px">
+      </div>
+      <div class="dash-actions">
+        <button type="button" onclick="changeAccountPassword()">Change password</button>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title">Appearance</p>
+      <button type="button" onclick="toggleTheme()">Toggle theme</button>
+    </div>
+  </div>
+</main>
+
+<script src="script.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

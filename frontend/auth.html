@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+   
+  <meta charset="UTF-8" />
+  <title>Account | Legal Guide</title>
+
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="fabulous.css"/>
+
+
+</head>
+
+<body class="auth-page">
+
+<a href="index.html" class="auth-back-link" title="Back to home" aria-label="Back to home" data-key="authBackHome">← Home</a>
+
+<div class="auth-container glass slide-up">
+
+  <h1 class="auth-title">⚖ Legal Guide</h1>
+  <div class="auth-top-actions">
+    <button type="button" class="auth-icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+    <button type="button" class="auth-icon-btn" onclick="toggleLang()" aria-label="Toggle language" title="Toggle language">🌐</button>
+  </div>
+
+  <div class="tabs">
+    <button id="loginTabBtn" class="tab active" data-key="authLoginTab" onclick="showLogin()">Login</button>
+    <button id="signupTabBtn" class="tab" data-key="authSignupTab" onclick="showSignup()">Sign Up</button>
+  </div>
+
+
+  <!-- LOGIN -->
+  <div id="loginBox" class="auth-box auth-login-box">
+    <input id="loginEmail" data-placeholder-key="authLoginIdentifierPlaceholder" placeholder="Email or phone number">
+    <input id="loginPassword" data-placeholder-key="authPasswordPlaceholder" type="password" placeholder="Password">
+    <button class="full-btn" data-key="authLoginBtn" type="button" onclick="login()">Login</button>
+  </div>
+
+
+  <!-- SIGNUP -->
+  <div id="signupBox" class="auth-box auth-signup-panel hidden">
+    <div class="auth-signup-fields">
+      <input id="signupName" data-placeholder-key="authFullNamePlaceholder" placeholder="Full Name">
+      <input id="signupEmail" data-placeholder-key="authEmailPlaceholder" placeholder="Email">
+      <input id="signupPhone" data-placeholder-key="authPhonePlaceholder" type="tel" placeholder="Phone number">
+      <input id="signupPassword" data-placeholder-key="authPasswordPlaceholder" type="password" placeholder="Password">
+
+      <select id="signupRole" onchange="onSignupRoleChange()">
+        <option value="User" data-key="authRoleUser">User</option>
+        <option value="Lawyer" data-key="authRoleLawyer">Lawyer</option>
+      </select>
+
+      <div id="lawyerDocsBox" class="auth-lawyer-extra hidden">
+        <p class="auth-lawyer-hint" data-i18n="authLawyerSignupHint">Create your account first. After signup, complete your specialty, fees, practice details, and availability in your lawyer dashboard.</p>
+        <p class="auth-lawyer-docs-title" data-i18n="authLawyerDocsTitle">Credentials <span class="auth-required">*</span></p>
+        <textarea id="signupDocuments" class="auth-lawyer-docs-input" rows="2" data-placeholder-key="authDocsPlaceholder" placeholder="Document links (ID, certificate, license), one per line"></textarea>
+        <label for="signupDocumentFiles" class="auth-lawyer-file-label" data-key="authOrUploadFiles">Or upload files</label>
+        <input id="signupDocumentFiles" class="auth-lawyer-file-input" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" />
+        <small class="auth-lawyer-upload-hint" data-key="authLawyerDocsRequiredHint">Required: at least one document link or file (max 3 files, 2MB each).</small>
+      </div>
+    </div>
+
+    <button class="full-btn auth-submit-btn" data-key="authCreateAccountBtn" type="button" onclick="signup()">Create Account</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
+
+</body>
+</html>
