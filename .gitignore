@@ -12,6 +12,8 @@ backend/venv/
 frontend/legalguide-data.json
 frontend/legalguide.db
 frontend/*.db
+frontend/*.db-wal
+frontend/*.db-shm
 
 # Python
 __pycache__/
