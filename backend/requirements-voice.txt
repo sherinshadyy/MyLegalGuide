@@ -1,0 +1,14 @@
+# Voice STT for Egyptian Arabic (optional — install in backend venv)
+#   pip install -r requirements-voice.txt
+# Requires ffmpeg on PATH for webm/opus from browsers.
+
+-r requirements.txt
+faster-whisper>=1.0.0
+python-multipart>=0.0.9
+
+# Local CLI only (voice_assistant.py — microphone test)
+sounddevice>=0.4.6
+soundfile>=0.12.1
+arabic-reshaper>=3.0.0
+python-bidi>=0.4.2
+requests>=2.31.0

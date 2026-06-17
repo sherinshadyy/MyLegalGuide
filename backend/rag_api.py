@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """HTTP API for the Egyptian legal RAG pipeline (used by the LegalGuide frontend)."""
 
+import base64
 import json
 import os
 import pickle
@@ -98,6 +99,19 @@ class DocumentRequest(BaseModel):
     user_note: str = ""
     jurisdiction: str = "مصر"
     history: List[ChatMessage] = Field(default_factory=list)
+
+
+class VoiceTranscribeRequest(BaseModel):
+    audio_base64: str = Field(..., min_length=16)
+    mime_type: str = "audio/webm"
+    lang: str = "ar-EG"
+
+
+class VoiceTranscribeResponse(BaseModel):
+    ok: bool = True
+    text: str
+    normalized: str = ""
+    search_hint: str = ""
 
 
 _OCR_PAGE_PROMPT = (
@@ -391,10 +405,25 @@ def _warm_models_background() -> None:
     threading.Thread(target=_run, daemon=True).start()
 
 
+def _warm_voice_background() -> None:
+    def _run() -> None:
+        try:
+            from voice_stt import preload_whisper, voice_stt_config
+
+            if voice_stt_config()["enabled"]:
+                preload_whisper()
+                print("[rag] voice STT model ready")
+        except Exception as exc:
+            print(f"[rag] voice STT warm-up skipped: {exc}")
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _load_index()
     _warm_models_background()
+    _warm_voice_background()
     print(f"[rag] API listening — docs={len(_docs)}, rerank={USE_RERANK}, groq={_groq_client is not None}")
     yield
 
@@ -567,6 +596,15 @@ def _generate_legal_document(
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
+    voice_info: Dict[str, Any] = {"enabled": False, "ready": False, "loading": False}
+    try:
+        from voice_stt import whisper_status
+
+        voice_info = whisper_status()
+    except ImportError:
+        voice_info["error"] = "requirements-voice.txt not installed"
+    except Exception as exc:
+        voice_info["error"] = str(exc)
     return {
         "ok": True,
         "store": str(STORE_DIR),
@@ -576,7 +614,45 @@ def health() -> Dict[str, Any]:
         "models_ready": _models_ready,
         "models_loading": not _models_ready and _models_error is None,
         "models_error": _models_error,
+        "voice_stt": voice_info,
     }
+
+
+@app.post("/voice/transcribe", response_model=VoiceTranscribeResponse)
+def voice_transcribe(req: VoiceTranscribeRequest) -> VoiceTranscribeResponse:
+    try:
+        from voice_stt import transcribe_audio_bytes, voice_stt_config
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Voice STT not installed. Run: pip install -r requirements-voice.txt",
+        ) from exc
+
+    if not voice_stt_config()["enabled"]:
+        raise HTTPException(status_code=503, detail="Voice STT is disabled (VOICE_STT_ENABLED=0)")
+
+    raw_b64 = req.audio_base64.strip()
+    if "," in raw_b64:
+        raw_b64 = raw_b64.split(",", 1)[1]
+    try:
+        audio_bytes = base64.b64decode(raw_b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid audio data: {exc}") from exc
+
+    try:
+        result = transcribe_audio_bytes(audio_bytes, mime_type=req.mime_type, lang=req.lang)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return VoiceTranscribeResponse(
+        text=result["text"],
+        normalized=result.get("normalized") or "",
+        search_hint=result.get("search_hint") or "",
+    )
 
 
 @app.post("/chat", response_model=ChatResponse)

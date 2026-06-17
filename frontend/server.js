@@ -665,13 +665,63 @@ app.post('/api/chat/analyze-document', optionalAuth, async (req, res) => {
   }
 });
 
-/** Future server-side STT — wire your provider here (Whisper, Azure, etc.) */
-app.post('/api/chat/voice/transcribe', optionalAuth, (req, res) => {
-  res.status(501).json({
-    ok: false,
-    error: 'Voice transcription is not configured yet. Use browser voice input or implement this endpoint.',
-    feature: 'voice_stt'
-  });
+/** Voice STT availability (Whisper on RAG API) */
+app.get('/api/chat/voice/status', async (req, res) => {
+  try {
+    const r = await fetch(`${RAG_API_URL}/health`, { signal: AbortSignal.timeout(8000) });
+    const data = await r.json().catch(() => ({}));
+    const voice = data.voice_stt || data.voice || {};
+    res.json({
+      ok: true,
+      serverStt: voice.enabled !== false,
+      ready: !!voice.ready,
+      loading: !!voice.loading,
+      model: voice.model || null,
+      error: voice.error || null,
+    });
+  } catch (err) {
+    res.json({ ok: false, serverStt: false, error: err.message || 'RAG API unreachable' });
+  }
+});
+
+/** Server-side Whisper STT (Egyptian Arabic) — proxied to Python RAG API */
+app.post('/api/chat/voice/transcribe', optionalAuth, async (req, res) => {
+  const { audioBase64, mimeType, lang } = req.body || {};
+  if (!audioBase64 || typeof audioBase64 !== 'string') {
+    return res.status(400).json({ ok: false, error: 'Missing audioBase64' });
+  }
+  try {
+    const ragRes = await fetch(`${RAG_API_URL}/voice/transcribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audio_base64: audioBase64,
+        mime_type: mimeType || 'audio/webm',
+        lang: lang || 'ar-EG',
+      }),
+      signal: AbortSignal.timeout(Number(process.env.VOICE_TRANSCRIBE_TIMEOUT_MS || 90000)),
+    });
+    const data = await ragRes.json().catch(() => ({}));
+    if (!ragRes.ok) {
+      const detail = data.detail;
+      const errMsg = Array.isArray(detail)
+        ? detail.map((d) => d.msg || d).join('; ')
+        : (detail || data.error || 'Transcription failed');
+      return res.status(ragRes.status >= 400 ? ragRes.status : 502).json({ ok: false, error: errMsg });
+    }
+    return res.json({
+      ok: true,
+      text: data.text || '',
+      normalized: data.normalized || '',
+      searchHint: data.search_hint || '',
+    });
+  } catch (err) {
+    console.error('Voice transcribe error', err);
+    return res.status(503).json({
+      ok: false,
+      error: err.message || 'Voice service unavailable. Start the RAG API with voice dependencies installed.',
+    });
+  }
 });
 
 app.post('/api/chat', optionalAuth, async (req, res) => {

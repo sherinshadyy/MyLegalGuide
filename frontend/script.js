@@ -232,7 +232,8 @@ const dict = {
     genderNotSpecified:"Gender not specified", availableSlots:"available time slot(s)", remove:"Remove",
     suspend:"Suspend", delete:"Delete", approve:"Approve", sending:"Sending…", openDashboard:"Open Dashboard",
     lawyerWorkspace:"Lawyer Workspace", lawyerWorkspaceSub:"Manage your availability, documents, client requests, and appointment chats from your dashboard.",
-    voiceInput:"Voice input", voiceStop:"Stop listening", voiceListening:"Listening…",
+    voiceInput:"Voice input", voiceStop:"Stop listening", voiceListening:"Listening…", voiceTranscribing:"Transcribing…",
+    voiceServerFallback:"Server voice busy — using browser microphone…",
     voiceNotSupported:"Voice input is not supported in this browser yet.", voiceError:"Voice input failed. Try again or type your message."
   },
   ar:{
@@ -313,7 +314,8 @@ const dict = {
     genderNotSpecified:"الجنس غير محدد", availableSlots:"موعد/مواعيد متاحة", remove:"إزالة",
     suspend:"إيقاف", delete:"حذف", approve:"اعتماد", sending:"جاري الإرسال…", openDashboard:"فتح لوحة التحكم",
     lawyerWorkspace:"مساحة المحامي", lawyerWorkspaceSub:"أدر مواعيدك ومستنداتك وطلبات العملاء ومحادثات المواعيد من لوحة التحكم.",
-    voiceInput:"إدخال صوتي", voiceStop:"إيقاف الاستماع", voiceListening:"جاري الاستماع…",
+    voiceInput:"إدخال صوتي", voiceStop:"إيقاف الاستماع", voiceListening:"جاري الاستماع…", voiceTranscribing:"جاري التحويل إلى نص…",
+    voiceServerFallback:"الصوت من الخادم مشغول — سيتم استخدام الميكروفون من المتصفح…",
     voiceNotSupported:"الإدخال الصوتي غير مدعوم في هذا المتصفح بعد.", voiceError:"فشل الإدخال الصوتي. حاول مرة أخرى أو اكتب رسالتك."
   }
 };
