@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""System prompts for LegalGuide AI (Q&A and document analysis)."""
+"""System prompts for LegalGuide AI (Q&A, document analysis, and generation)."""
+
+import re
 
 SYSTEM_PROMPT = """
 أنت مساعد معلومات قانونية لمصر — ولست محامياً مرخصاً ولا تقدم استشارة قانونية ملزمة.
@@ -112,4 +114,91 @@ def build_document_user_prompt(document_text: str, user_note: str = "", jurisdic
         f"{note}\n"
         f"نص الوثيقة:\n---\n{document_text[:120000]}\n---\n\n"
         "لخّص الوثيقة بالهيكل الخمسة المطلوب."
+    )
+
+
+DOCUMENT_GENERATION_SYSTEM_PROMPT = """
+أنت مساعد لصياغة مسودات قانونية عامة في مصر — ولست محامياً مرخصاً ولا تقدم استشارة قانونية ملزمة.
+
+## قواعد
+- أنشئ مسودة وثيقة كاملة بناءً على طلب المستخدم.
+- استخدم لغة عربية فصحى قانونية واضحة مع عناوين وبنود مرقمة.
+- اترك فراغات للبيانات الشخصية بين [أقواس مربعة] مثل: [اسم الطرف الأول]، [التاريخ]، [المحكمة].
+- لا تختلق مواد قانونية برقم قانون إلا إن كنت متأكداً؛ يمكن الإشارة العامة للقانون المصري دون أرقام وهمية.
+- في نهاية المسودة أضف بنداً: «هذه مسودة للمراجعة من محامٍ مرخص قبل التوقيع أو الاستخدام الرسمي.»
+- لا تدّعِ أنك محامٍ.
+
+## تنسيق الإخراج (إلزامي — ثلاثة أقسام بالضبط بهذه العلامات)
+===TITLE===
+(عنوان قصير للوثيقة — سطر واحد فقط)
+===BODY===
+(نص الوثيقة الكامل — العناوين والبنود)
+===NOTE===
+(رسالة قصيرة للمستخدم بالعامية المصرية البسيطة: ماذا أنشأت + تذكير بمراجعة محامٍ — 2-4 جمل)
+"""
+
+
+def is_document_generation_request(message: str) -> bool:
+    s = (message or "").strip()
+    if len(s) < 4:
+        return False
+    lower = s.lower()
+    gen_patterns = [
+        r"صيغ[ةه]",
+        r"نموذج",
+        r"مسود[ةه]",
+        r"اكتب",
+        r"جهز",
+        r"أعد|اعد",
+        r"إعداد|اعداد",
+        r"صياغ[ةه]",
+        r"\bdraft\b",
+        r"\bwrite\b",
+        r"\bgenerate\b",
+        r"\bprepare\b",
+        r"\bcreate\b",
+    ]
+    if not any(re.search(p, lower, re.I) for p in gen_patterns):
+        return False
+    if re.search(
+        r"^(ما|ماذا|ما\s+هو|ما\s+هي|إيه|ايه|how|what\s+is|explain|define|tell\s+me\s+about)\b",
+        lower,
+    ):
+        if not re.search(r"اكتب|صيغ|نموذج|draft|write|generate|prepare|create", lower):
+            return False
+    return True
+
+
+def build_document_generation_prompt(
+    request: str,
+    contexts: list,
+    chat_history=None,
+    jurisdiction: str = "مصر",
+) -> str:
+    ctx_blocks = []
+    for c in contexts or []:
+        chunk_id = c.get("id", "unknown")
+        content = c.get("content", "")
+        ctx_blocks.append(f"[id={chunk_id}]\n{content}")
+    joined_ctx = "\n\n".join(ctx_blocks) if ctx_blocks else "(لا يوجد سياق إضافي)"
+
+    history_str = ""
+    if chat_history:
+        recent = chat_history[-8:]
+        parts = []
+        for msg in recent:
+            role = msg.get("role", "")
+            if role == "user":
+                parts.append(f"المستخدم: {msg['content']}")
+            elif role == "assistant":
+                parts.append(f"المساعد: {msg['content']}")
+        if parts:
+            history_str = "سجل المحادثة السابقة:\n" + "\n".join(parts) + "\n\n"
+
+    return (
+        f"الاختصاص القضائي: {jurisdiction}\n\n"
+        f"{history_str}"
+        f"طلب المستخدم:\n{request}\n\n"
+        f"سياق قانوني مرجعي (للاسترشاد فقط — لا تنسخه حرفياً):\n{joined_ctx}\n\n"
+        "أنشئ المسودة بالتنسيق الثلاثي المطلوب (===TITLE=== / ===BODY=== / ===NOTE===)."
     )

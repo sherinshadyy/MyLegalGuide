@@ -495,6 +495,9 @@ async function askRagBackend(message, history) {
     return {
       reply: data.reply || '',
       sources: Array.isArray(data.sources) ? data.sources : [],
+      documentTitle: data.document_title || null,
+      documentText: data.document_text || null,
+      generatedDocument: !!data.generated_document,
     };
   } finally {
     clearTimeout(timeout);
@@ -712,8 +715,17 @@ app.post('/api/chat', optionalAuth, async (req, res) => {
     const result = await askRagBackend(trimmed, chatHistory);
     const reply = result.reply || 'No response';
 
+    const docFields = result.documentText
+      ? { documentText: result.documentText, documentTitle: result.documentTitle || 'مسودة قانونية' }
+      : {};
+
     if(conv){
-      conv.messages.push({ role: 'assistant', content: reply, at: new Date().toISOString() });
+      conv.messages.push({
+        role: 'assistant',
+        content: reply,
+        at: new Date().toISOString(),
+        ...docFields,
+      });
       conv.updatedAt = conv.messages[conv.messages.length - 1].at;
       if(conv.messages.length > 40){
         conv.messages = conv.messages.slice(-40);
@@ -726,6 +738,9 @@ app.post('/api/chat', optionalAuth, async (req, res) => {
       sources: result.sources || [],
       conversationId: conv ? conv.id : null,
       title: conv ? conv.title : null,
+      documentTitle: result.documentTitle || null,
+      documentText: result.documentText || null,
+      generatedDocument: !!result.generatedDocument,
     });
   } catch (err) {
     console.error('RAG API error', err);

@@ -5,6 +5,7 @@
 import json
 import os
 import pickle
+import re
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,7 +24,13 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 
 from rag_answer import SYSTEM_PROMPT, build_prompt, hybrid_retrieve_rrf_multi
 from arabic_query import prepare_user_question
-from legal_prompts import DOCUMENT_SYSTEM_PROMPT, build_document_user_prompt
+from legal_prompts import (
+    DOCUMENT_GENERATION_SYSTEM_PROMPT,
+    DOCUMENT_SYSTEM_PROMPT,
+    build_document_generation_prompt,
+    build_document_user_prompt,
+    is_document_generation_request,
+)
 
 STORE_DIR = Path(os.getenv("RAG_STORE", "rag_store"))
 EMBED_MODEL = os.getenv(
@@ -45,6 +52,7 @@ BM25_K = int(os.getenv("RAG_BM25_K", "30"))
 USE_RERANK = os.getenv("RAG_USE_RERANK", "0").lower() not in ("0", "false", "no")
 MAX_TOKENS = int(os.getenv("RAG_MAX_TOKENS", "768"))
 DOC_MAX_TOKENS = int(os.getenv("RAG_DOC_MAX_TOKENS", "1400"))
+DOC_GEN_MAX_TOKENS = int(os.getenv("RAG_DOC_GEN_MAX_TOKENS", "3000"))
 TEMPERATURE = float(os.getenv("RAG_TEMPERATURE", "0.2"))
 QUERY_REWRITE = os.getenv("RAG_QUERY_REWRITE", "1").lower() not in ("0", "false", "no")
 
@@ -78,6 +86,9 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     sources: List[str] = Field(default_factory=list)
+    document_title: Optional[str] = None
+    document_text: Optional[str] = None
+    generated_document: bool = False
 
 
 class DocumentRequest(BaseModel):
@@ -509,6 +520,51 @@ def _generate(query: str, contexts: List[Dict[str, Any]], history: List[Dict[str
     return (response.choices[0].message.content or "").strip()
 
 
+def _parse_generated_document(raw: str) -> tuple:
+    text = (raw or "").strip()
+    m_title = re.search(r"===TITLE===\s*(.+?)\s*===BODY===", text, re.DOTALL | re.IGNORECASE)
+    m_body = re.search(r"===BODY===\s*(.+?)\s*===NOTE===", text, re.DOTALL | re.IGNORECASE)
+    m_note = re.search(r"===NOTE===\s*(.+)$", text, re.DOTALL | re.IGNORECASE)
+    if m_title and m_body and m_note:
+        return (
+            m_title.group(1).strip(),
+            m_body.group(1).strip(),
+            m_note.group(1).strip(),
+        )
+    return (
+        "مسودة قانونية",
+        text,
+        "تم إنشاء المسودة. يُرجى مراجعتها من محامٍ مرخص قبل الاستخدام.",
+    )
+
+
+def _generate_legal_document(
+    query: str,
+    contexts: List[Dict[str, Any]],
+    history: List[Dict[str, str]],
+) -> tuple:
+    user_prompt = build_document_generation_prompt(query, contexts, chat_history=history or None)
+
+    if _groq_client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="GROQ_API_KEY is not set. Copy .env.example to .env and add your key from https://console.groq.com/",
+        )
+
+    response = _groq_client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": DOCUMENT_GENERATION_SYSTEM_PROMPT.strip()},
+            {"role": "user", "content": user_prompt},
+        ],
+        max_tokens=DOC_GEN_MAX_TOKENS,
+        temperature=0.35,
+    )
+    raw = (response.choices[0].message.content or "").strip()
+    title, body, note = _parse_generated_document(raw)
+    return note, title, body
+
+
 @app.get("/health")
 def health() -> Dict[str, Any]:
     return {
@@ -545,9 +601,19 @@ def chat(req: ChatRequest) -> ChatResponse:
     llm_question = str(prepared.get("original") or query).strip()
     hist_dicts = [{"role": m.role, "content": m.content} for m in req.history if m.content.strip()]
     contexts = _retrieve(query, rerank_query=str(prepared.get("cleaned") or query), history=hist_dicts)
-    reply = _generate(llm_question, contexts, hist_dicts)
     sources = [str(c.get("id", "")) for c in contexts if c.get("id")]
 
+    if is_document_generation_request(query):
+        reply, doc_title, doc_text = _generate_legal_document(llm_question, contexts, hist_dicts)
+        return ChatResponse(
+            reply=reply,
+            sources=sources,
+            document_title=doc_title,
+            document_text=doc_text,
+            generated_document=True,
+        )
+
+    reply = _generate(llm_question, contexts, hist_dicts)
     return ChatResponse(reply=reply, sources=sources)
 
 

@@ -195,6 +195,11 @@ const dict = {
     basicInfoHint:"Updates here go live immediately — no admin approval needed.",
     practiceApprovalHint:"Changes to specialty, description, or fees require admin approval before clients see them.",
     profilePhonePublic:"Phone (shown to clients)", availabilityDocs:"Availability & Documents", availabilitySlots:"Availability slots",
+    slotBuilderIntro:"Pick a date and time, then add slots. Clients will choose from your list when booking.",
+    slotPickDate:"Date", slotPickTime:"Time", slotAddOne:"Add slot", slotQuickAdd:"Quick add for selected date:",
+    slotMorning:"Morning (9–12)", slotAfternoon:"Afternoon (2–5)", slotListEmpty:"No slots added yet. Add at least one so clients can book.",
+    slotDuplicate:"This slot is already in your list", slotPast:"Choose a future date and time", slotNeedDate:"Pick a date first",
+    slotNeedTime:"Pick a time", slotAdded:"Slot added", chooseAvailableSlot:"Choose available slot",
     oneSlotPerLine:"One slot per line", saveAvailability:"Save availability", uploadDocs:"Upload documents",
     lawyersPageTitle:"Personal Status Lawyers", lawyersPageSub:"Browse approved specialists, filter by specialty, gender, and consultation fee, then book a time that fits you.",
     filterSpecialty:"Specialty", filterGender:"Gender", allSpecialties:"All specialties", anyGender:"Any",
@@ -270,6 +275,11 @@ const dict = {
     basicInfoHint:"يُنشر فوراً دون موافقة الإدارة.",
     practiceApprovalHint:"تغيير التخصص أو الوصف أو الرسوم يحتاج موافقة الإدارة.",
     profilePhonePublic:"الهاتف (يظهر للعملاء)", availabilityDocs:"المواعيد والمستندات", availabilitySlots:"مواعيد متاحة",
+    slotBuilderIntro:"اختر التاريخ والوقت ثم أضف المواعيد. سيختار العملاء من قائمتك عند الحجز.",
+    slotPickDate:"التاريخ", slotPickTime:"الوقت", slotAddOne:"إضافة موعد", slotQuickAdd:"إضافة سريعة للتاريخ المحدد:",
+    slotMorning:"صباحاً (9–12)", slotAfternoon:"بعد الظهر (2–5)", slotListEmpty:"لم تُضف مواعيد بعد. أضف موعداً واحداً على الأقل ليتمكن العملاء من الحجز.",
+    slotDuplicate:"هذا الموعد موجود بالفعل", slotPast:"اختر تاريخاً ووقتاً في المستقبل", slotNeedDate:"اختر التاريخ أولاً",
+    slotNeedTime:"اختر الوقت", slotAdded:"تمت إضافة الموعد", chooseAvailableSlot:"اختر موعداً متاحاً",
     oneSlotPerLine:"موعد واحد في كل سطر", saveAvailability:"حفظ المواعيد", uploadDocs:"رفع مستندات",
     lawyersPageTitle:"محامو الأحوال الشخصية", lawyersPageSub:"تصفح المحامين المعتمدين، وفلتر حسب التخصص والجنس والرسوم، ثم احجز موعداً يناسبك.",
     filterSpecialty:"التخصص", filterGender:"الجنس", allSpecialties:"كل التخصصات", anyGender:"أي",
@@ -329,6 +339,7 @@ let currentLang="en";
 let currentChatBookingId = '';
 let currentChatPartnerName = '';
 let lawyerDocumentsCache = [];
+let lawyerSlotsCache = [];
 let lawyersCache = [];
 let lawyerProfilePageTarget = null;
 
@@ -657,9 +668,8 @@ function collectLawyerPublicMetaFromForm(includeAvailability){
     bookingOptions
   };
   if(includeAvailability){
-    const availability = (document.getElementById('availabilityInput') || {}).value || '';
-    body.availability = availability;
-    body.availabilitySlots = availability.split(/[,;\n\r]+/).map(s=>s.trim()).filter(Boolean);
+    body.availabilitySlots = lawyerSlotsCache.slice();
+    body.availability = lawyerSlotsCache.join('\n');
     body.documents = lawyerDocumentsCache;
   }
   return body;
@@ -953,7 +963,7 @@ function renderLawyerProfilePage(l){
     : `<p>${escapeHtml(t('noBookingOptions'))}</p>`;
 
   const slotList = slots.length
-    ? `<ul class="lawyer-profile-slot-list">${slots.map(s => `<li>${escapeHtml(String(s))}</li>`).join('')}</ul>`
+    ? `<ul class="lawyer-profile-slot-list">${slots.map(s => `<li>${escapeHtml(formatSlotLabel(s))}</li>`).join('')}</ul>`
     : `<p class="lawyer-profile-section-text--muted">${escapeHtml(t('noSlotsYet'))}</p>`;
 
   const practiceBlock = practice && practice !== desc
@@ -1347,6 +1357,7 @@ function setLanguage(lang){
   });
   renderLawyerRejectionNotice();
   refreshDynamicTranslations();
+  if(document.getElementById('lawyerSlotsList')) renderLawyerSlotsList();
   if(typeof AiVoiceInput !== 'undefined') AiVoiceInput.refreshLabels();
 }
 
@@ -1439,7 +1450,12 @@ function getCurrentAiConversation(){ return aiConversationsStore.find(c => c.id 
 function persistCurrentAiMessages(){
   const conv = getCurrentAiConversation();
   if(!conv) return;
-  conv.messages = aiChatHistory.map(m => ({ role: m.role, content: m.content }));
+  conv.messages = aiChatHistory.map(m => {
+    const row = { role: m.role, content: m.content };
+    if(m.documentText) row.documentText = m.documentText;
+    if(m.documentTitle) row.documentTitle = m.documentTitle;
+    return row;
+  });
   conv.updatedAt = new Date().toISOString();
   if(!isAiChatLoggedIn()){
     const store = loadGuestAiStore();
@@ -1467,14 +1483,80 @@ function formatChatHtml(text){
   return safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
 }
 
-function appendChatMessage(role, content, extraClass){
+function sanitizeDownloadFilename(title, fallback){
+  const base = String(title || fallback || 'document')
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+    .replace(/\s+/g, '_')
+    .slice(0, 80) || 'document';
+  return base;
+}
+
+function triggerFileDownload(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function downloadGeneratedDocument(documentText, documentTitle, format){
+  const title = sanitizeDownloadFilename(documentTitle, 'legal_document');
+  const text = String(documentText || '');
+  if(!text.trim()) return;
+  if(format === 'doc'){
+    const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head><body style="font-family:'Traditional Arabic',Arial,sans-serif;font-size:14pt;line-height:1.8;direction:rtl;text-align:right;"><div style="white-space:pre-wrap;">${escapeHtml(text)}</div></body></html>`;
+    triggerFileDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), title + '.doc');
+  } else {
+    triggerFileDownload(new Blob(['\ufeff', text], { type: 'text/plain;charset=utf-8' }), title + '.txt');
+  }
+}
+
+function attachDocumentDownloadBar(bubble, documentText, documentTitle){
+  if(!documentText || !bubble) return;
+  const bar = document.createElement('div');
+  bar.className = 'chat-doc-download';
+  const docBtn = document.createElement('button');
+  docBtn.type = 'button';
+  docBtn.className = 'chat-doc-btn primary';
+  docBtn.textContent = currentLang === 'ar' ? '⬇ تحميل Word' : '⬇ Download Word';
+  docBtn.onclick = () => downloadGeneratedDocument(documentText, documentTitle, 'doc');
+  const txtBtn = document.createElement('button');
+  txtBtn.type = 'button';
+  txtBtn.className = 'chat-doc-btn';
+  txtBtn.textContent = currentLang === 'ar' ? '⬇ تحميل نص' : '⬇ Download TXT';
+  txtBtn.onclick = () => downloadGeneratedDocument(documentText, documentTitle, 'txt');
+  bar.appendChild(docBtn);
+  bar.appendChild(txtBtn);
+  bubble.appendChild(bar);
+}
+
+function fillChatBubble(bubble, content, docMeta){
+  if(!bubble) return;
+  bubble.classList.remove('loading');
+  bubble.innerHTML = formatChatHtml(content);
+  if(docMeta && docMeta.documentText){
+    attachDocumentDownloadBar(bubble, docMeta.documentText, docMeta.documentTitle);
+  }
+}
+
+function mapStoredChatMessage(m){
+  return {
+    role: m.role,
+    content: m.content,
+    documentText: m.documentText || null,
+    documentTitle: m.documentTitle || null,
+  };
+}
+
+function appendChatMessage(role, content, extraClass, docMeta){
   const body = document.getElementById('chatBody');
   if(!body) return null;
   const row = document.createElement('div');
   row.className = 'chat-row ' + (role === 'user' ? 'user' : 'bot');
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble ' + role + (extraClass ? ' ' + extraClass : '');
-  if(role === 'bot') bubble.innerHTML = formatChatHtml(content);
+  if(role === 'bot') fillChatBubble(bubble, content, docMeta);
   else bubble.innerText = content;
   row.appendChild(bubble);
   body.appendChild(row);
@@ -1488,12 +1570,16 @@ function renderAiChatBody(messages, showWelcome){
   body.innerHTML = '';
   if(showWelcome && (!messages || !messages.length)){
     const welcome = currentLang === 'ar'
-      ? '🤖 مرحباً! اسألني أي سؤال قانوني مصري.\n\n• نفس المحادثة = متابعة الأسئلة\n• 📎 = رفع عقد (TXT أو PDF — حتى الممسوح ضوئياً)\n• ⤢ = تصغير/تكبير النافذة\n\nملاحظة: معلومات عامة وليست استشارة من محامٍ مرخص.'
-      : '🤖 Ask an Egyptian legal question.\n\n• Same chat = follow-ups\n• 📎 = upload contract (TXT/PDF, scans OK)\n• ⤢ = resize window\n\nNote: general info only, not licensed legal advice.';
+      ? '🤖 مرحباً! اسألني أي سؤال قانوني مصري.\n\n• نفس المحادثة = متابعة الأسئلة\n• اكتب «صيغة عقد زواج» أو «اكتب نموذج إيجار» لإنشاء مسودة قابلة للتحميل\n• 📎 = رفع عقد (TXT أو PDF — حتى الممسوح ضوئياً)\n• ⤢ = تصغير/تكبير النافذة\n\nملاحظة: معلومات عامة وليست استشارة من محامٍ مرخص.'
+      : '🤖 Ask an Egyptian legal question.\n\n• Same chat = follow-ups\n• Ask e.g. «write a marriage contract» to generate a downloadable draft\n• 📎 = upload contract (TXT/PDF, scans OK)\n• ⤢ = resize window\n\nNote: general info only, not licensed legal advice.';
     appendChatMessage('bot', welcome);
     return;
   }
-  (messages || []).forEach(m => appendChatMessage(m.role === 'user' ? 'user' : 'bot', m.content || ''));
+  (messages || []).forEach(m => {
+    const role = m.role === 'user' ? 'user' : 'bot';
+    const docMeta = m.documentText ? { documentText: m.documentText, documentTitle: m.documentTitle } : null;
+    appendChatMessage(role, m.content || '', '', docMeta);
+  });
 }
 
 function updateChatTitleLabel(){
@@ -1505,7 +1591,7 @@ function selectAiConversation(id){
   const conv = aiConversationsStore.find(c => c.id === id);
   if(!conv) return;
   currentAiConversationId = id;
-  aiChatHistory = (conv.messages || []).map(m => ({ role: m.role, content: m.content }));
+  aiChatHistory = (conv.messages || []).map(mapStoredChatMessage);
   renderAiChatBody(aiChatHistory, true);
   renderAiConversationList();
   updateChatTitleLabel();
@@ -1532,7 +1618,7 @@ async function loadAiConversations(){
     currentAiConversationId = store.currentId || null;
     if(currentAiConversationId){
       const conv = getCurrentAiConversation();
-      if(conv) aiChatHistory = (conv.messages || []).map(m => ({ role: m.role, content: m.content }));
+      if(conv) aiChatHistory = (conv.messages || []).map(mapStoredChatMessage);
     }
   }
   renderAiConversationList();
@@ -1770,9 +1856,16 @@ async function sendMsg(){
   })
   .then(data=>{
     const reply = data.reply || data.error || (currentLang === 'ar' ? 'لا توجد إجابة' : 'No response');
-    loadingBubble.classList.remove('loading');
-    loadingBubble.innerHTML = formatChatHtml(reply);
-    aiChatHistory.push({ role: 'assistant', content: reply });
+    const docMeta = data.documentText
+      ? { documentText: data.documentText, documentTitle: data.documentTitle || (currentLang === 'ar' ? 'مسودة قانونية' : 'Legal draft') }
+      : null;
+    fillChatBubble(loadingBubble, reply, docMeta);
+    const assistantMsg = { role: 'assistant', content: reply };
+    if(docMeta){
+      assistantMsg.documentText = docMeta.documentText;
+      assistantMsg.documentTitle = docMeta.documentTitle;
+    }
+    aiChatHistory.push(assistantMsg);
     if(data.conversationId){
       currentAiConversationId = data.conversationId;
       let conv = getCurrentAiConversation();
@@ -1780,7 +1873,12 @@ async function sendMsg(){
         conv = { id: data.conversationId, title: data.title || 'محادثة', messages: [], updatedAt: new Date().toISOString() };
         aiConversationsStore.unshift(conv);
       }
-      conv.messages = aiChatHistory.map(m => ({ role: m.role, content: m.content }));
+      conv.messages = aiChatHistory.map(m => {
+        const row = { role: m.role, content: m.content };
+        if(m.documentText) row.documentText = m.documentText;
+        if(m.documentTitle) row.documentTitle = m.documentTitle;
+        return row;
+      });
       if(data.title) conv.title = data.title;
       conv.updatedAt = new Date().toISOString();
     } else {
@@ -1788,7 +1886,12 @@ async function sendMsg(){
       if(conv){
         const userCount = (conv.messages || []).filter(m => m.role === 'user').length;
         if(userCount <= 1) conv.title = text.length > 42 ? text.slice(0, 42) + '…' : text;
-        conv.messages = aiChatHistory.map(m => ({ role: m.role, content: m.content }));
+        conv.messages = aiChatHistory.map(m => {
+          const row = { role: m.role, content: m.content };
+          if(m.documentText) row.documentText = m.documentText;
+          if(m.documentTitle) row.documentTitle = m.documentTitle;
+          return row;
+        });
         persistCurrentAiMessages();
       }
     }
@@ -1843,6 +1946,162 @@ function closeBooking(){
   const meetingSelect = document.getElementById('bookMeetingType');
   if(meetingWrap) meetingWrap.classList.add('hidden');
   if(meetingSelect) meetingSelect.innerHTML = '';
+}
+
+/** Canonical slot key: "YYYY-MM-DD HH:MM" */
+function canonicalSlotKey(date, time){
+  const d = String(date || '').trim();
+  const st = String(time || '').trim();
+  const tm = st.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  const normTime = tm ? `${String(parseInt(tm[1], 10)).padStart(2, '0')}:${tm[2]}` : st;
+  return `${d} ${normTime}`.trim();
+}
+
+function normalizeLawyerSlotsArray(slots){
+  const seen = new Set();
+  const out = [];
+  expandAvailabilitySlots(slots).forEach(raw=>{
+    const p = parseLawyerSlot(raw);
+    const key = (p.date && p.time) ? canonicalSlotKey(p.date, p.time) : String(raw || '').trim();
+    if(key && !seen.has(key)){
+      seen.add(key);
+      out.push(key);
+    }
+  });
+  return out.sort((a, b) => a.localeCompare(b));
+}
+
+function formatSlotLabel(canonical){
+  const day = formatSlotDayOnly(canonical);
+  const time = formatSlotTimeOnly(canonical);
+  if(!day || !time) return String(canonical || '');
+  if(currentLang === 'ar') return `${day} — ${time}`;
+  return `${day} · ${time}`;
+}
+
+function formatSlotDayOnly(canonical){
+  const p = parseLawyerSlot(canonical);
+  if(!p.date) return '';
+  const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+  const d = new Date(`${p.date}T12:00:00`);
+  if(Number.isNaN(d.getTime())) return p.date;
+  return d.toLocaleDateString(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatSlotTimeOnly(canonical){
+  const p = parseLawyerSlot(canonical);
+  if(!p.date || !p.time) return '';
+  const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+  const d = new Date(`${p.date}T${p.time}:00`);
+  if(Number.isNaN(d.getTime())) return p.time;
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function initLawyerSlotPicker(){
+  const dateInput = document.getElementById('slotPickerDate');
+  if(!dateInput) return;
+  const today = new Date();
+  const min = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  dateInput.min = min;
+  if(!dateInput.value || dateInput.value < min) dateInput.value = min;
+}
+
+function setLawyerSlotsFromUser(u){
+  const fromSlots = Array.isArray(u && u.availabilitySlots) ? u.availabilitySlots : [];
+  const fromText = String((u && u.availability) || '').split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
+  lawyerSlotsCache = normalizeLawyerSlotsArray(fromSlots.length ? fromSlots : fromText);
+  renderLawyerSlotsList();
+}
+
+function renderLawyerSlotsList(){
+  const list = document.getElementById('lawyerSlotsList');
+  const empty = document.getElementById('lawyerSlotsEmpty');
+  if(!list) return;
+  if(!lawyerSlotsCache.length){
+    list.innerHTML = '';
+    if(empty) empty.classList.remove('hidden');
+    return;
+  }
+  if(empty) empty.classList.add('hidden');
+
+  const byDate = {};
+  lawyerSlotsCache.forEach(key=>{
+    const p = parseLawyerSlot(key);
+    const day = p.date || key.split(' ')[0] || 'Other';
+    if(!byDate[day]) byDate[day] = [];
+    byDate[day].push(key);
+  });
+
+  const days = Object.keys(byDate).sort();
+  list.innerHTML = days.map(day=>{
+    const chips = byDate[day].map(key=>{
+      const idx = lawyerSlotsCache.indexOf(key);
+      return `
+      <span class="lawyer-slot-chip">
+        <span class="lawyer-slot-chip-time">${escapeHtml(formatSlotTimeOnly(key))}</span>
+        <button type="button" class="lawyer-slot-chip-remove" onclick="removeLawyerSlotByIndex(${idx})" aria-label="${escapeHtml(t('remove'))}">×</button>
+      </span>`;
+    }).join('');
+    const dayLabel = formatSlotDayOnly(byDate[day][0]);
+    return `<div class="lawyer-slot-day-group">
+      <div class="lawyer-slot-day-label">${escapeHtml(dayLabel)}</div>
+      <div class="lawyer-slot-day-chips">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+function getSlotPickerDateValue(){
+  const dateInput = document.getElementById('slotPickerDate');
+  return dateInput ? String(dateInput.value || '').trim() : '';
+}
+
+function addLawyerSlotKey(date, time, opts){
+  const silent = !!(opts && opts.silent);
+  const key = canonicalSlotKey(date, time);
+  if(!key || key.length < 12){ if(!silent) toast(t('slotNeedTime')); return false; }
+  const slotDate = new Date(`${date}T${time}:00`);
+  if(Number.isNaN(slotDate.getTime())){ if(!silent) toast(t('slotNeedTime')); return false; }
+  if(slotDate.getTime() < Date.now() - 60000){ if(!silent) toast(t('slotPast')); return false; }
+  if(lawyerSlotsCache.includes(key)){ if(!silent) toast(t('slotDuplicate')); return false; }
+  lawyerSlotsCache.push(key);
+  lawyerSlotsCache.sort((a, b) => a.localeCompare(b));
+  if(!silent){
+    renderLawyerSlotsList();
+    toast(t('slotAdded'));
+  }
+  return true;
+}
+
+function addLawyerSlotFromPicker(){
+  const date = getSlotPickerDateValue();
+  const timeInput = document.getElementById('slotPickerTime');
+  const time = timeInput ? String(timeInput.value || '').trim().slice(0, 5) : '';
+  if(!date){ toast(t('slotNeedDate')); return; }
+  if(!time){ toast(t('slotNeedTime')); return; }
+  addLawyerSlotKey(date, time);
+}
+
+function addLawyerQuickSlots(period){
+  const date = getSlotPickerDateValue();
+  if(!date){ toast(t('slotNeedDate')); return; }
+  const times = period === 'morning'
+    ? ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00']
+    : ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'];
+  let added = 0;
+  times.forEach(tm=>{ if(addLawyerSlotKey(date, tm, { silent: true })) added++; });
+  renderLawyerSlotsList();
+  if(added) toast(t('slotAdded'));
+  else toast(t('slotDuplicate'));
+}
+
+function removeLawyerSlotByIndex(index){
+  if(index < 0 || index >= lawyerSlotsCache.length) return;
+  lawyerSlotsCache.splice(index, 1);
+  renderLawyerSlotsList();
+}
+
+function removeLawyerSlot(key){
+  removeLawyerSlotByIndex(lawyerSlotsCache.indexOf(key));
 }
 
 /** Split lawyer availability entries from API (handles commas, semicolons, newlines inside one cell). */
@@ -2062,18 +2321,16 @@ function openBookingWithEmail(lawyer, lawyerEmail){
 function fillBookingSlots(slots){
   const slotSelect = document.getElementById('bookSlot');
   if(!slotSelect) return;
-  const slotList = expandAvailabilitySlots(slots);
+  const slotList = normalizeLawyerSlotsArray(slots);
   slotSelect.innerHTML = '';
   const ph = document.createElement('option');
   ph.value = '';
-  ph.textContent = 'Choose available slot';
+  ph.textContent = t('chooseAvailableSlot');
   slotSelect.appendChild(ph);
-  slotList.forEach((slotStr)=>{
-    const clean = slotStr.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
-    if(!clean) return;
+  slotList.forEach((key)=>{
     const o = document.createElement('option');
-    o.value = clean;
-    o.textContent = clean;
+    o.value = key;
+    o.textContent = formatSlotLabel(key);
     slotSelect.appendChild(o);
   });
 }
@@ -2930,15 +3187,16 @@ function changeAccountPassword(){
 
 function loadLawyerProfile(){
   const token = localStorage.getItem('lg_token');
-  const availability = document.getElementById('availabilityInput');
   const documentsList = document.getElementById('documentsList');
-  if(!token || !availability || !documentsList) return;
+  if(!token || !documentsList) return;
+
+  initLawyerSlotPicker();
 
   fetch(apiUrl('/api/me'), { headers: { 'Authorization': 'Bearer ' + token }})
   .then(r=>r.json())
   .then(res=>{
     if(!res.ok || !res.user) return;
-    availability.value = res.user.availability || '';
+    setLawyerSlotsFromUser(res.user);
     fillLawyerAvailabilityForm(res.user);
     lawyerDocumentsCache = Array.isArray(res.user.documents) ? res.user.documents : [];
     renderLawyerDocuments();
@@ -2959,6 +3217,7 @@ async function saveLawyerProfile(){
       if(res.user){
         syncLocalUser(res.user);
         patchLawyerInCacheFromUser(res.user);
+        setLawyerSlotsFromUser(res.user);
         fillLawyerAvailabilityForm(res.user);
       }
       toast('Availability saved');

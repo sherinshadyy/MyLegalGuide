@@ -177,14 +177,30 @@
   <div id="lawyerProfile" class="dash-box hidden">
     <h2>Availability &amp; Documents</h2>
     <div class="dash-card">
-      <p class="dash-card-title">Availability slots</p>
-      <div class="dash-form-row">
-        <label for="availabilityInput">One slot per line</label>
-        <textarea id="availabilityInput" placeholder="2026-05-01 10:00&#10;2026-05-02 14:30" style="min-height:100px"></textarea>
+      <p class="dash-card-title" data-i18n="availabilitySlots">Availability slots</p>
+      <p class="slot-builder-intro" data-i18n="slotBuilderIntro">Pick a date and time, then add slots. Clients will choose from your list when booking.</p>
+      <div class="slot-builder">
+        <div class="slot-builder-row">
+          <div class="slot-builder-field">
+            <label for="slotPickerDate" data-i18n="slotPickDate">Date</label>
+            <input type="date" id="slotPickerDate">
+          </div>
+          <div class="slot-builder-field">
+            <label for="slotPickerTime" data-i18n="slotPickTime">Time</label>
+            <input type="time" id="slotPickerTime" step="900" value="10:00">
+          </div>
+          <button type="button" class="slot-builder-add-btn" onclick="addLawyerSlotFromPicker()" data-i18n="slotAddOne">Add slot</button>
+        </div>
+        <div class="slot-quick-add">
+          <span class="slot-quick-label" data-i18n="slotQuickAdd">Quick add for selected date:</span>
+          <button type="button" class="slot-quick-btn" onclick="addLawyerQuickSlots('morning')" data-i18n="slotMorning">Morning (9–12)</button>
+          <button type="button" class="slot-quick-btn" onclick="addLawyerQuickSlots('afternoon')" data-i18n="slotAfternoon">Afternoon (2–5)</button>
+        </div>
+        <div id="lawyerSlotsList" class="lawyer-slots-list" aria-live="polite"></div>
+        <p id="lawyerSlotsEmpty" class="slot-builder-empty" data-i18n="slotListEmpty">No slots added yet. Add at least one so clients can book.</p>
       </div>
-      <p style="font-size:13px;color:#6B5E50;margin:0 0 12px">Format: <strong>YYYY-MM-DD HH:MM</strong> (24-hour).</p>
       <div class="dash-actions">
-        <button type="button" onclick="saveLawyerProfile()">Save availability</button>
+        <button type="button" onclick="saveLawyerProfile()" data-i18n="saveAvailability">Save availability</button>
       </div>
     </div>
     <div class="dash-card">

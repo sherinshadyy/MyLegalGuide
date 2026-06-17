@@ -657,3 +657,217 @@
 .dark .review-prompt-item-label{
   color:#F0E8DC;
 }
+
+/* Lawyer availability slot builder */
+.slot-builder-intro{
+  font-size:13px;
+  color:#6B5E50;
+  margin:0 0 16px;
+  line-height:1.5;
+}
+
+.slot-builder{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.slot-builder-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:flex-end;
+}
+
+.slot-builder-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:140px;
+}
+
+.slot-builder-field label{
+  font-size:12px;
+  font-weight:600;
+  color:#6B5E50;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.slot-builder-field input[type="date"],
+.slot-builder-field input[type="time"]{
+  margin:0;
+  padding:10px 12px;
+  border:1px solid #D4C4B0;
+  border-radius:10px;
+  background:#fff;
+  font-size:14px;
+  min-height:42px;
+}
+
+.slot-builder-add-btn{
+  margin:0;
+  padding:10px 18px;
+  border-radius:10px;
+  border:none;
+  background:#9A7B4F;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+  min-height:42px;
+}
+
+.slot-builder-add-btn:hover{
+  background:#826843;
+}
+
+.slot-quick-add{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+.slot-quick-label{
+  font-size:13px;
+  color:#6B5E50;
+  margin-inline-end:4px;
+}
+
+.slot-quick-btn{
+  margin:0;
+  padding:7px 12px;
+  border-radius:999px;
+  border:1px solid #D4C4B0;
+  background:#F5EFE6;
+  color:#4A3F32;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.slot-quick-btn:hover{
+  background:#E8DFD0;
+  border-color:#9A7B4F;
+}
+
+.lawyer-slots-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.lawyer-slot-day-group{
+  padding:12px 14px;
+  border:1px solid #E8DFD0;
+  border-radius:12px;
+  background:#FDFBF8;
+}
+
+.lawyer-slot-day-label{
+  font-size:13px;
+  font-weight:700;
+  color:#4A3F32;
+  margin-bottom:10px;
+}
+
+.lawyer-slot-day-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.lawyer-slot-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 8px 6px 12px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid #D4C4B0;
+  font-size:13px;
+  color:#4A3F32;
+}
+
+.lawyer-slot-chip-remove{
+  margin:0;
+  padding:0;
+  width:22px;
+  height:22px;
+  border:none;
+  border-radius:50%;
+  background:#F5EFE6;
+  color:#7A6A58;
+  font-size:16px;
+  line-height:1;
+  cursor:pointer;
+}
+
+.lawyer-slot-chip-remove:hover{
+  background:#F5D5C8;
+  color:#5C2E1F;
+}
+
+.slot-builder-empty{
+  font-size:13px;
+  color:#9A8B7A;
+  margin:0;
+  padding:14px;
+  text-align:center;
+  border:1px dashed #D4C4B0;
+  border-radius:12px;
+  background:#FAF7F2;
+}
+
+.slot-builder-empty.hidden{
+  display:none;
+}
+
+.dark .slot-builder-intro,
+.dark .slot-builder-field label,
+.dark .slot-quick-label{
+  color:#C4B8A8;
+}
+
+.dark .slot-builder-field input[type="date"],
+.dark .slot-builder-field input[type="time"]{
+  background:#2A241C;
+  border-color:#4A4035;
+  color:#F0E8DC;
+}
+
+.dark .slot-quick-btn{
+  background:#342C22;
+  border-color:#4A4035;
+  color:#F0E8DC;
+}
+
+.dark .slot-quick-btn:hover{
+  background:#3D3428;
+  border-color:#9A7B4F;
+}
+
+.dark .lawyer-slot-day-group{
+  background:#2A241C;
+  border-color:#4A4035;
+}
+
+.dark .lawyer-slot-day-label{
+  color:#F0E8DC;
+}
+
+.dark .lawyer-slot-chip{
+  background:#342C22;
+  border-color:#4A4035;
+  color:#F0E8DC;
+}
+
+.dark .lawyer-slot-chip-remove{
+  background:#3D3428;
+  color:#C4B8A8;
+}
+
+.dark .slot-builder-empty{
+  background:#2A241C;
+  border-color:#4A4035;
+  color:#9A8B7A;
+}

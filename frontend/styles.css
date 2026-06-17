@@ -414,6 +414,56 @@ input:focus,textarea:focus{ outline:none; box-shadow:0 6px 18px rgba(107,83,68,.
   color:#6B5E50;
 }
 
+.chat-doc-download{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed #D4C8B8;
+}
+
+.chat-doc-btn{
+  border:1px solid #C4B5A3;
+  background:#F5EFE6;
+  color:#3D3429;
+  border-radius:8px;
+  padding:6px 12px;
+  font-size:12px;
+  cursor:pointer;
+  font-family:inherit;
+}
+
+.chat-doc-btn:hover{
+  background:#E8DFD0;
+}
+
+.chat-doc-btn.primary{
+  background:#5C4F42;
+  color:#FFFCF7;
+  border-color:#5C4F42;
+}
+
+.chat-doc-btn.primary:hover{
+  background:#4A3F35;
+}
+
+.dark .chat-doc-download{
+  border-top-color:#6B5E50;
+}
+
+.dark .chat-doc-btn{
+  background:#4A3F35;
+  color:#F5EFE6;
+  border-color:#6B5E50;
+}
+
+.dark .chat-doc-btn.primary{
+  background:#E8DFD0;
+  color:#3D3429;
+  border-color:#E8DFD0;
+}
+
 .chat-input{
   display:flex;
   gap:8px;
