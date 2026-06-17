@@ -4,9 +4,11 @@ This project provides a minimal backend for the LegalGuide static frontend.
 
 Features:
 - Serves static files (the project root) using Express
+- **SQLite** persistence (`legalguide.db`, configurable via `SQLITE_PATH`) for users, bookings, reviews, AI chats, admin actions, and contact form messages
+- One-time import from `legalguide-data.json` on first run if the DB is empty
 - /api/chat — proxies to the Python RAG API (`rag_api.py` on port 8000)
-- /api/contact — stores contact messages in memory
-- /api/book — stores booking requests in memory
+- /api/contact — saves contact messages to the database
+- /api/book — stores booking requests in the database
 - /api/health — simple health check
 
 Quick start

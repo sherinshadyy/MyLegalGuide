@@ -10,6 +10,8 @@ backend/venv/
 
 # Runtime / local data (contains user accounts)
 frontend/legalguide-data.json
+frontend/legalguide.db
+frontend/*.db
 
 # Python
 __pycache__/

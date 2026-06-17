@@ -211,6 +211,7 @@ const dict = {
     minutesShort:"min", noBookingOptions:"No meeting types listed yet",
     loadingLawyers:"Loading lawyers...", noLawyersAvailable:"No lawyers available yet.", bookConsultation:"Book consultation", close:"Close",
     adminTitle:"Admin Control Center", adminSub:"Review lawyers who saved their profile or price range and are waiting to go live on the public lawyers page.",
+    adminContactsTitle:"Contact form messages", adminContactsEmpty:"No contact messages yet.", adminMarkRead:"Mark read", adminRead:"Read", adminUnread:"Unread",
     pendingApprovals:"Pending lawyer approvals", usersLawyers:"Users & Lawyers", recentActions:"Recent Admin Actions",
     siteHome:"Site home", approveLawyer:"Approve lawyer", rejectLawyer:"Reject", unread:"Unread",
     status:"Status", role:"Role", feeOnRequest:"Fee on request", confirm:"Confirm", cancel:"Cancel", cancelAppt:"Cancel appointment",
@@ -291,6 +292,7 @@ const dict = {
     minutesShort:"دقيقة", noBookingOptions:"لم يُحدد نوع الاجتماع بعد",
     loadingLawyers:"جاري تحميل المحامين...", noLawyersAvailable:"لا يوجد محامون متاحون بعد.", bookConsultation:"حجز استشارة", close:"إغلاق",
     adminTitle:"مركز تحكم الإدارة", adminSub:"راجع المحامين الذين حفظوا ملفهم أو نطاق السعر وبانتظار النشر على صفحة المحامين.",
+    adminContactsTitle:"رسائل نموذج التواصل", adminContactsEmpty:"لا توجد رسائل تواصل بعد.", adminMarkRead:"تعليم كمقروء", adminRead:"مقروء", adminUnread:"غير مقروء",
     pendingApprovals:"موافقات المحامين المعلقة", usersLawyers:"المستخدمون والمحامون", recentActions:"آخر إجراءات الإدارة",
     siteHome:"الموقع", approveLawyer:"اعتماد المحامي", rejectLawyer:"رفض", unread:"غير مقروء",
     status:"الحالة", role:"الدور", feeOnRequest:"الرسوم عند الطلب", confirm:"تأكيد", cancel:"إلغاء", cancelAppt:"إلغاء الموعد",
@@ -3509,12 +3511,14 @@ function loadAdminPanel(){
   Promise.all([
     fetch(apiUrl('/api/admin/lawyer-applications'), { headers: apiAuthHeaders() }).then(r=>r.json()),
     fetch(apiUrl('/api/admin/users'), { headers: apiAuthHeaders() }).then(r=>r.json()),
-    fetch(apiUrl('/api/admin/actions'), { headers: apiAuthHeaders() }).then(r=>r.json())
+    fetch(apiUrl('/api/admin/actions'), { headers: apiAuthHeaders() }).then(r=>r.json()),
+    fetch(apiUrl('/api/admin/contacts'), { headers: apiAuthHeaders() }).then(r=>r.json())
   ])
-  .then(([apps, users, actions])=>{
+  .then(([apps, users, actions, contacts])=>{
     renderAdminPending(apps);
     renderAdminUsers(users);
     renderAdminActions(actions);
+    renderAdminContacts(contacts);
     const count = (apps.ok && Array.isArray(apps.applications)) ? apps.applications.length : 0;
     const badge = document.getElementById('adminPendingBadge');
     if(badge){
@@ -3750,6 +3754,48 @@ function renderAdminActions(res){
   const actions = Array.isArray(res.actions) ? res.actions : [];
   if(!actions.length){ box.innerText = 'No actions yet.'; return; }
   box.innerHTML = actions.slice(0, 80).map(a=>`<div style="padding:6px 0;border-bottom:1px solid #E4D9CC"><strong>${escapeHtml(a.action || '')}</strong> — ${escapeHtml(a.targetEmail || '')} <span style="color:#6B5E50">by ${escapeHtml(a.adminEmail || '')} at ${escapeHtml(a.at || '')}</span></div>`).join('');
+}
+
+function renderAdminContacts(data){
+  const box = document.getElementById('adminContactsTable');
+  if(!box) return;
+  const list = (data && data.ok && Array.isArray(data.contacts)) ? data.contacts : [];
+  const unread = list.filter(c => !c.isRead).length;
+  const badge = document.getElementById('adminContactsUnreadBadge');
+  if(badge){
+    if(unread > 0){
+      badge.textContent = String(unread);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+  if(!list.length){
+    box.innerHTML = `<p style="color:#6B5E50;margin:0">${escapeHtml(t('adminContactsEmpty'))}</p>`;
+    return;
+  }
+  const header = `<div style="display:grid;grid-template-columns:1.2fr 1.2fr 2fr 1fr auto;gap:8px;font-weight:700;padding:8px 0;border-bottom:2px solid #E4D9CC;color:#6B5E50;font-size:12px"><div>${currentLang === 'ar' ? 'الاسم' : 'Name'}</div><div>${currentLang === 'ar' ? 'البريد' : 'Email'}</div><div>${currentLang === 'ar' ? 'الرسالة' : 'Message'}</div><div>${currentLang === 'ar' ? 'التاريخ' : 'Date'}</div><div>${currentLang === 'ar' ? 'الحالة' : 'Status'}</div></div>`;
+  box.innerHTML = header + list.map(c => {
+    const dateLabel = c.createdAt ? new Date(c.createdAt).toLocaleString(currentLang === 'ar' ? 'ar-EG' : undefined) : '';
+    const status = c.isRead ? t('adminRead') : t('adminUnread');
+    const rowBg = c.isRead ? '' : 'background:#FFF8EE;';
+    const msg = escapeHtml(c.message || '').replace(/\n/g, '<br>');
+    const markBtn = c.isRead ? '' : `<button type="button" onclick="markAdminContactRead(${Number(c.id)})">${escapeHtml(t('adminMarkRead'))}</button>`;
+    return `<div style="display:grid;grid-template-columns:1.2fr 1.2fr 2fr 1fr auto;gap:8px;align-items:start;border-bottom:1px solid #E4D9CC;padding:10px 0;${rowBg}"><div>${escapeHtml(c.name || '')}</div><div><a href="mailto:${escapeHtml(c.email || '')}">${escapeHtml(c.email || '')}</a></div><div style="font-size:13px;line-height:1.5">${msg}</div><div style="font-size:12px;color:#6B5E50">${escapeHtml(dateLabel)}</div><div style="font-size:12px">${escapeHtml(status)} ${markBtn}</div></div>`;
+  }).join('');
+}
+
+function markAdminContactRead(id){
+  fetch(apiUrl(`/api/admin/contacts/${encodeURIComponent(id)}/read`), {
+    method: 'PATCH',
+    headers: apiAuthHeaders()
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(!data.ok) throw new Error(data.error || 'Failed');
+    loadAdminPanel();
+  })
+  .catch(() => toast(currentLang === 'ar' ? 'تعذر تحديث الرسالة' : 'Could not update message'));
 }
 
 function approveLawyer(email){

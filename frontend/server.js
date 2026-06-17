@@ -1,9 +1,9 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const cors = require('cors');
 require('dotenv').config();
 
+const db = require('./db');
 const DATA_FILE = path.join(__dirname, 'legalguide-data.json');
 
 function parseLawyerSlotServer(raw){
@@ -52,7 +52,7 @@ function slotAllowed(date, time, allowedSlots){
 
 function saveState(){
   try{
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ users, bookings, adminActions, aiConversations, lawyerReviews }, null, 2), 'utf8');
+    db.saveAllState({ users, bookings, adminActions, aiConversations, lawyerReviews });
     return true;
   } catch(e){
     console.error('saveState', e);
@@ -62,8 +62,7 @@ function saveState(){
 
 function loadState(){
   try{
-    if(!fs.existsSync(DATA_FILE)) return;
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    const data = db.loadAllState();
     if(Array.isArray(data.users) && data.users.length){
       users.splice(0, users.length, ...data.users);
     }
@@ -446,6 +445,11 @@ users.push(
   }
 );
 
+db.initDatabase();
+const migration = db.migrateFromJsonIfNeeded(DATA_FILE);
+if(migration.migrated){
+  console.log('[db] Imported', migration.users || 0, 'users from legalguide-data.json');
+}
 loadState();
 let lawyerProfileFieldsPersisted = false;
 users.forEach(u=>{
@@ -472,6 +476,10 @@ users.forEach(u=>{
   }
 });
 if(lawyerProfileFieldsPersisted) saveState();
+if(db.isDbEmpty() && users.length){
+  saveState();
+  console.log('[db] Seeded default users into SQLite at', db.getDbPath());
+}
 
 async function askRagBackend(message, history) {
   const controller = new AbortController();
@@ -767,18 +775,21 @@ app.get('/api/health', async (req, res) => {
   } catch (_e) {
     ragOk = false;
   }
-  res.json({ ok: true, rag: ragOk, ragUrl: RAG_API_URL, profileFieldsVersion: 2 });
+  res.json({ ok: true, rag: ragOk, ragUrl: RAG_API_URL, profileFieldsVersion: 2, database: 'sqlite', dbPath: db.getDbPath() });
 });
 
-// Simple contact and booking endpoints (in-memory)
-const contacts = [];
-
+// Contact form (persisted in SQLite)
 app.post('/api/contact', (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) return res.json({ ok: false, error: 'Missing fields' });
-  contacts.push({ name, email, message, at: new Date().toISOString() });
-  console.log('Contact received', contacts[contacts.length-1]);
-  res.json({ ok: true });
+  try {
+    const row = db.insertContact({ name, email, message });
+    console.log('Contact received', { id: row.id, email: row.email });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('POST /api/contact', e);
+    res.status(500).json({ ok: false, error: 'Could not save contact message' });
+  }
 });
 
 app.get('/api/lawyers/meta', (_req, res) => {
@@ -1496,10 +1507,33 @@ app.get('/api/admin/actions', verifyToken, requireAdmin, (_req, res) => {
   res.json({ ok: true, actions: adminActions.slice().reverse().slice(0, 200) });
 });
 
+app.get('/api/admin/contacts', verifyToken, requireAdmin, (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 200;
+    const contacts = db.listContacts({ limit });
+    res.json({ ok: true, contacts });
+  } catch (e) {
+    console.error('GET /api/admin/contacts', e);
+    res.status(500).json({ ok: false, error: 'Could not load contacts' });
+  }
+});
+
+app.patch('/api/admin/contacts/:id/read', verifyToken, requireAdmin, (req, res) => {
+  try {
+    const ok = db.markContactRead(req.params.id);
+    if (!ok) return res.status(404).json({ ok: false, error: 'Contact not found' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('PATCH /api/admin/contacts/:id/read', e);
+    res.status(500).json({ ok: false, error: 'Could not update contact' });
+  }
+});
+
 // Static files last so /api/* routes are never shadowed
 app.use(express.static(path.join(__dirname)));
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`SQLite database: ${db.getDbPath()}`);
   console.log(`Lawyer profile fields API version: 2 (location, experience, booking options)`);
 });
