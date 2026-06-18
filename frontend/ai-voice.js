@@ -1,5 +1,5 @@
 /**
- * AI chat voice input — server Whisper STT (Egyptian Arabic) with browser STT fallback.
+ * AI chat voice input — server Whisper STT (Egyptian Arabic) with browser STT fallback (English only).
  */
 (function(global){
   'use strict';
@@ -18,6 +18,7 @@
     mediaStream: null,
     audioChunks: [],
     bound: false,
+    recordStartedAt: 0,
 
     getLang(){
       const lang = (global.currentLang || (global.localStorage && global.localStorage.getItem('lang')) || 'en');
@@ -28,8 +29,13 @@
       return this.getLang().startsWith('ar');
     },
 
+    /** Arabic: always record and send to Whisper when the server has voice enabled. */
+    useServerRecording(){
+      return this.isArabic() && this.serverSttAvailable && mediaSupported;
+    },
+
     useServerStt(){
-      return this.isArabic() && this.serverSttAvailable && this.serverSttReady && mediaSupported;
+      return this.useServerRecording() && this.serverSttReady;
     },
 
     t(key, fallback){
@@ -68,6 +74,11 @@
       btn.disabled = !this.supported || busy;
     },
 
+    clearVoiceSession(input){
+      if(!input) return;
+      delete input.dataset.voiceBase;
+    },
+
     applyTranscript(text){
       const input = this.getInput();
       if(!input) return;
@@ -90,14 +101,17 @@
     },
 
     stop(){
+      this.listening = false;
       if(this.recognition){
+        try{ this.recognition.onend = null; }catch(_e){}
         try{ this.recognition.stop(); }catch(_e){}
         try{ this.recognition.abort(); }catch(_e){}
+        this.recognition = null;
       }
       this.stopMedia();
       if(!this.processing){
-        this.listening = false;
         this.setUiState(false);
+        this.clearVoiceSession(this.getInput());
       }
     },
 
@@ -125,13 +139,61 @@
       return '';
     },
 
+    sleep(ms){
+      return new Promise(resolve => global.setTimeout(resolve, ms));
+    },
+
+    isLoadingError(msg){
+      return /loading|not ready|try again/i.test(String(msg || ''));
+    },
+
+    async refreshServerStatus(){
+      try{
+        const url = typeof global.apiUrl === 'function'
+          ? global.apiUrl('/api/chat/voice/status')
+          : '/api/chat/voice/status';
+        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        const data = await res.json().catch(()=>({}));
+        this.serverSttAvailable = !!data.serverStt;
+        this.serverSttReady = !!data.ready;
+        if(data.loading) this.serverSttReady = false;
+        this.serverSttModel = data.model || null;
+      }catch(_e){
+        this.serverSttAvailable = false;
+        this.serverSttReady = false;
+      }
+      const btn = this.getButton();
+      if(btn && this.isArabic() && this.serverSttAvailable){
+        btn.classList.remove('chat-voice-btn--unsupported');
+      }
+      return this.serverSttReady;
+    },
+
+    async waitForServerReady(maxMs){
+      const deadline = Date.now() + (maxMs || 120000);
+      while(Date.now() < deadline){
+        if(await this.refreshServerStatus()) return true;
+        if(!this.serverSttAvailable) return false;
+        await this.sleep(2000);
+      }
+      return this.serverSttReady;
+    },
+
     async startServerCapture(){
       if(this.listening || this.processing) return;
       try{
-        const stream = await global.navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await global.navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+            sampleRate: { ideal: 48000 }
+          }
+        });
         this.mediaStream = stream;
         const mime = this.pickMimeType();
-        const opts = mime ? { mimeType: mime } : undefined;
+        const opts = mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : { audioBitsPerSecond: 128000 };
         this.recorder = new global.MediaRecorder(stream, opts);
         this.audioChunks = [];
         this.recorder.ondataavailable = (e) => {
@@ -143,9 +205,15 @@
           const blob = new Blob(this.audioChunks, { type });
           this.audioChunks = [];
           this.listening = false;
-          if(!blob.size){
+          const elapsed = Date.now() - (this.recordStartedAt || 0);
+          if(elapsed < 1800){
             this.setUiState(false);
-            this.toast(this.t('voiceError', 'Voice input failed. Try again or type your message.'));
+            this.toast(this.t('voiceTooShort', 'Recording too short — speak for at least 2 seconds, then click the mic to stop.'));
+            return;
+          }
+          if(!blob.size || blob.size < 800){
+            this.setUiState(false);
+            this.toast(this.t('voiceTooShort', 'Recording too short — speak for at least 2 seconds, then click the mic to stop.'));
             return;
           }
           this.processing = true;
@@ -156,20 +224,26 @@
             else this.toast(this.t('voiceError', 'Voice input failed. Try again or type your message.'));
           }catch(err){
             console.warn('Server STT failed:', err);
-            this.toast(this.t('voiceServerFallback', 'Server voice busy — using browser microphone…'));
-            this.startBrowserCapture();
+            if(!this.isArabic() && SpeechRecognitionCtor){
+              this.toast(this.t('voiceServerFallback', 'Server voice busy — using browser microphone…'));
+              this.startBrowserCapture();
+            } else {
+              this.toast(err.message || this.t('voiceError', 'Voice input failed. Try again or type your message.'));
+            }
           }finally{
             this.processing = false;
             this.setUiState(false);
           }
         };
-        this.recorder.start(250);
+        this.recorder.start(500);
+        this.recordStartedAt = Date.now();
         this.listening = true;
         this.setUiState(true);
+        this.toast(this.t('voiceListeningHint', 'Speak now — click the mic again when finished.'));
       }catch(_e){
         this.toast(this.t('voiceError', 'Could not start voice input.'));
         this.stop();
-        if(SpeechRecognitionCtor) this.startBrowserCapture();
+        if(!this.isArabic() && SpeechRecognitionCtor) this.startBrowserCapture();
       }
     },
 
@@ -223,8 +297,7 @@
       rec.onend = ()=>{
         this.listening = false;
         this.setUiState(false);
-        const input = this.getInput();
-        if(input) delete input.dataset.voiceBase;
+        this.clearVoiceSession(this.getInput());
       };
 
       return rec;
@@ -249,7 +322,34 @@
       }
     },
 
-    start(){
+    async start(){
+      await this.refreshServerStatus();
+
+      if(this.useServerRecording()){
+        if(!this.serverSttReady){
+          this.processing = true;
+          this.setUiState(false);
+          this.toast(this.t('voiceModelLoading', 'Loading Egyptian voice model — please wait…'));
+          const ready = await this.waitForServerReady(180000);
+          this.processing = false;
+          if(!ready){
+            this.setUiState(false);
+            this.toast(this.t('voiceModelNotReady', 'Voice model is still loading. Make sure the RAG API is running, wait about a minute, then try again.'));
+            return;
+          }
+        }
+        const weak = String(this.serverSttModel || '').toLowerCase();
+        if(weak === 'tiny' || weak === 'tiny.en' || weak === 'base'){
+          console.warn('[voice] Whisper model is too small for Egyptian Arabic:', this.serverSttModel);
+        }
+        return this.startServerCapture();
+      }
+
+      if(this.isArabic()){
+        this.toast(this.t('voiceServerRequired', 'Accurate Egyptian voice needs the RAG API running (backend/start-rag.ps1).'));
+        return;
+      }
+
       if(this.useServerStt()) return this.startServerCapture();
       return this.startBrowserCapture();
     },
@@ -257,8 +357,11 @@
     toggle(){
       if(this.processing) return;
       if(this.listening){
-        if(this.useServerStt() && this.recorder) this.stopServerCapture();
-        else this.stop();
+        if(this.recorder && this.recorder.state === 'recording'){
+          this.stopServerCapture();
+        } else {
+          this.stop();
+        }
       } else {
         this.start();
       }
@@ -272,39 +375,31 @@
       const base = typeof global.apiUrl === 'function'
         ? global.apiUrl('/api/chat/voice/transcribe')
         : '/api/chat/voice/transcribe';
-      const res = await fetch(base, {
-        method: 'POST',
-        headers,
-        signal: AbortSignal.timeout(45000),
-        body: JSON.stringify({
-          audioBase64,
-          mimeType: mimeType || 'audio/webm',
-          lang: this.getLang()
-        })
-      });
-      const data = await res.json().catch(()=>({}));
-      if(!res.ok || !data.ok) throw new Error(data.error || 'Transcription failed');
-      return data.text || '';
-    },
 
-    async refreshServerStatus(){
-      try{
-        const url = typeof global.apiUrl === 'function'
-          ? global.apiUrl('/api/chat/voice/status')
-          : '/api/chat/voice/status';
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      const maxAttempts = 40;
+      let lastError = 'Transcription failed';
+      for(let attempt = 0; attempt < maxAttempts; attempt++){
+        const res = await fetch(base, {
+          method: 'POST',
+          headers,
+          signal: AbortSignal.timeout(90000),
+          body: JSON.stringify({
+            audioBase64,
+            mimeType: mimeType || 'audio/webm',
+            lang: this.getLang()
+          })
+        });
         const data = await res.json().catch(()=>({}));
-        this.serverSttAvailable = !!data.serverStt;
-        this.serverSttReady = !!data.ready;
-        if(data.loading) this.serverSttReady = false;
-      }catch(_e){
-        this.serverSttAvailable = false;
-        this.serverSttReady = false;
+        if(res.ok && data.ok) return data.text || '';
+        lastError = data.error || 'Transcription failed';
+        if(this.isLoadingError(lastError) && attempt < maxAttempts - 1){
+          await this.refreshServerStatus();
+          await this.sleep(2000);
+          continue;
+        }
+        throw new Error(lastError);
       }
-      const btn = this.getButton();
-      if(btn && this.isArabic() && this.serverSttAvailable){
-        btn.classList.remove('chat-voice-btn--unsupported');
-      }
+      throw new Error(lastError);
     },
 
     init(){
@@ -312,9 +407,12 @@
       const btn = this.getButton();
       if(!btn) return;
       this.bound = true;
-      btn.addEventListener('click', ()=> this.toggle());
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        this.toggle();
+      });
       this.refreshServerStatus();
-      this._voiceStatusTimer = global.setInterval(() => this.refreshServerStatus(), 20000);
+      this._voiceStatusTimer = global.setInterval(() => this.refreshServerStatus(), 5000);
       this.setUiState(false);
       if(!this.supported) btn.classList.add('chat-voice-btn--unsupported');
 
@@ -324,7 +422,7 @@
     },
 
     refreshLabels(){
-      this.setUiState(this.listening);
+      this.setUiState(this.listening || this.processing);
     }
   };
 

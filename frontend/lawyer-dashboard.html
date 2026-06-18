@@ -66,51 +66,51 @@
 
   <div id="lawyerBookings" class="dash-box">
     <h2 data-i18n="clientBookings">Client Bookings</h2>
-    <div id="lawyerBookingsList">No bookings yet.</div>
+    <div id="lawyerBookingsList"><p class="appointments-empty" data-i18n="noBookings">No bookings yet.</p></div>
   </div>
 
   <div id="profile" class="dash-box hidden">
-    <h2>Lawyer Profile</h2>
-    <p class="dash-page-sub" style="margin:0 0 18px">What clients see on the <a href="lawyers.html">lawyers page</a>.</p>
+    <h2 data-i18n="lawyerProfile">Lawyer Profile</h2>
+    <p class="dash-page-sub" style="margin:0 0 18px" data-i18n="lawyerProfileSub">What clients see on the lawyers page.</p>
 
     <div class="dash-card">
-      <p class="dash-card-title">Photo &amp; name</p>
+      <p class="dash-card-title" data-i18n="photoName">Photo &amp; name</p>
       <div class="dash-form-row">
-        <label>Profile photo</label>
+        <label data-i18n-label="profilePhoto">Profile photo</label>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <img id="accountProfilePreview" class="profile-avatar-preview hidden" alt="Profile">
           <div>
             <input id="accountProfilePicFile" type="file" accept="image/*">
-            <button type="button" onclick="uploadAccountProfilePicture()" style="margin-top:6px">Upload photo</button>
+            <button type="button" onclick="uploadAccountProfilePicture()" style="margin-top:6px" data-i18n="uploadPhoto">Upload photo</button>
           </div>
         </div>
       </div>
       <div class="dash-form-row">
-        <label for="accountNameInput">Display name</label>
+        <label for="accountNameInput" data-i18n-label="displayName">Display name</label>
         <input id="accountNameInput" style="max-width:400px">
       </div>
       <div class="dash-actions">
-        <button type="button" onclick="saveAccountProfile()">Save name</button>
+        <button type="button" onclick="saveAccountProfile()" data-i18n="saveName">Save name</button>
       </div>
     </div>
 
     <div class="dash-card">
-      <p class="dash-card-title">Public profile details (clients see these)</p>
-      <p style="font-size:13px;color:#6B5E50;margin:0 0 12px">Phone, location, experience, consultation length, and meeting types publish immediately — no admin approval.</p>
+      <p class="dash-card-title" data-i18n="publicProfileDetailsTitle">Public profile details (clients see these)</p>
+      <p style="font-size:13px;color:#6B5E50;margin:0 0 12px" data-i18n="publicDetailsHint">Phone, location, experience, consultation length, and meeting types publish immediately — no admin approval.</p>
       <div class="dash-form-row">
-        <label for="profileLawyerPhone">Phone (shown to clients)</label>
-        <input id="profileLawyerPhone" type="tel" placeholder="e.g. 01012345678" style="max-width:400px">
+        <label for="profileLawyerPhone" data-i18n-label="profilePhonePublic">Phone (shown to clients)</label>
+        <input id="profileLawyerPhone" type="tel" data-placeholder-key="phoneExamplePh" placeholder="e.g. 01012345678" style="max-width:400px">
       </div>
       <div class="dash-form-row">
-        <label for="profileLawyerExperience">Years of experience</label>
-        <input id="profileLawyerExperience" type="number" min="0" max="80" step="1" placeholder="e.g. 12" style="max-width:160px">
+        <label for="profileLawyerExperience" data-i18n-label="yearsExperience">Years of experience</label>
+        <input id="profileLawyerExperience" type="number" min="0" max="80" step="1" data-placeholder-key="yearsExperiencePh" placeholder="e.g. 12" style="max-width:160px">
       </div>
       <div class="dash-form-row">
-        <label for="profileLawyerLocation">Office location</label>
-        <input id="profileLawyerLocation" type="text" placeholder="City, district, or address clients should know" style="max-width:400px">
+        <label for="profileLawyerLocation" data-i18n-label="officeLocation">Office location</label>
+        <input id="profileLawyerLocation" type="text" data-placeholder-key="locationPh" placeholder="City, district, or address clients should know" style="max-width:400px">
       </div>
       <div class="dash-form-row">
-        <label for="profileConsultationDuration">Consultation duration</label>
+        <label for="profileConsultationDuration" data-i18n-label="consultationDurationLabel">Consultation duration</label>
         <select id="profileConsultationDuration" style="max-width:280px">
           <option value="">— Select duration —</option>
           <option value="15">15 minutes</option>
@@ -122,26 +122,26 @@
         </select>
       </div>
       <div class="dash-form-row">
-        <label>Booking options (clients choose when booking)</label>
+        <label data-i18n-label="bookingOptionsClients">Booking options (clients choose when booking)</label>
         <div class="dash-checkbox-group">
-          <label><input type="checkbox" id="profileBookingOnline" value="online"> Online meeting</label>
-          <label><input type="checkbox" id="profileBookingInPerson" value="in_person"> In-person meeting</label>
+          <label><input type="checkbox" id="profileBookingOnline" value="online"> <span data-i18n="meetingOnline">Online meeting</span></label>
+          <label><input type="checkbox" id="profileBookingInPerson" value="in_person"> <span data-i18n="meetingInPerson">In-person meeting</span></label>
         </div>
       </div>
       <div class="dash-actions">
-        <button type="button" onclick="saveLawyerPublicDetails()">Save public profile details</button>
+        <button type="button" onclick="saveLawyerPublicDetails()" data-i18n="savePublicDetails">Save public profile details</button>
       </div>
     </div>
 
     <div class="dash-card">
-      <p class="dash-card-title">Public practice info</p>
-      <p id="lawyerApprovalHint" class="hidden" style="font-size:13px;color:#9A7B4F;margin:0 0 12px;font-weight:600">Changes to specialty, description, or fees require admin approval before clients see them.</p>
+      <p class="dash-card-title" data-i18n="publicPractice">Public practice info</p>
+      <p id="lawyerApprovalHint" class="hidden" style="font-size:13px;color:#9A7B4F;margin:0 0 12px;font-weight:600" data-i18n="practiceApprovalHint">Changes to specialty, description, or fees require admin approval before clients see them.</p>
       <div class="dash-form-row">
-        <label for="profileLawyerSpecialty">Specialty</label>
+        <label for="profileLawyerSpecialty" data-i18n-label="specialty">Specialty</label>
         <select id="profileLawyerSpecialty" style="max-width:400px"></select>
       </div>
       <div class="dash-form-row">
-        <label for="profileLawyerGender">Gender (shown to clients)</label>
+        <label for="profileLawyerGender" data-i18n-label="genderShown">Gender (shown to clients)</label>
         <select id="profileLawyerGender" style="max-width:400px">
           <option value="">Prefer not to say</option>
           <option value="male">Male</option>
@@ -149,33 +149,33 @@
         </select>
       </div>
       <div class="dash-form-row">
-        <label for="profileLawyerDescription">Short description</label>
-        <textarea id="profileLawyerDescription" placeholder="Brief headline for listings" style="min-height:70px"></textarea>
+        <label for="profileLawyerDescription" data-i18n-label="shortDesc">Short description</label>
+        <textarea id="profileLawyerDescription" data-placeholder-key="shortDescPh" placeholder="Brief headline for listings" style="min-height:70px"></textarea>
       </div>
       <div class="dash-form-row">
-        <label for="profileLawyerDetails">Practice details</label>
-        <textarea id="profileLawyerDetails" placeholder="Services, languages, office details…" style="min-height:100px"></textarea>
+        <label for="profileLawyerDetails" data-i18n-label="practiceDetails">Practice details</label>
+        <textarea id="profileLawyerDetails" data-placeholder-key="practiceDetailsPh" placeholder="Services, languages, office details…" style="min-height:100px"></textarea>
       </div>
       <div class="dash-form-row">
-        <label>Price range (EGP per session)</label>
+        <label data-i18n-label="priceRange">Price range (EGP per session)</label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:320px">
-          <input id="profileLawyerFeeMin" type="number" min="0" step="50" placeholder="Min" style="flex:1;margin:0">
-          <input id="profileLawyerFeeMax" type="number" min="0" step="50" placeholder="Max" style="flex:1;margin:0">
+          <input id="profileLawyerFeeMin" type="number" min="0" step="50" data-placeholder-key="feeMinPh" placeholder="Min" style="flex:1;margin:0">
+          <input id="profileLawyerFeeMax" type="number" min="0" step="50" data-placeholder-key="feeMaxPh" placeholder="Max" style="flex:1;margin:0">
         </div>
       </div>
       <div class="dash-actions">
-        <button type="button" onclick="saveLawyerPracticeFromProfile()">Save practice info</button>
+        <button type="button" onclick="saveLawyerPracticeFromProfile()" data-i18n="savePractice">Save practice info</button>
       </div>
     </div>
 
     <div class="dash-card">
-      <p class="dash-card-title">Account summary</p>
-      <div id="profileInfo" style="color:#6B5E50;line-height:1.7">Loading...</div>
+      <p class="dash-card-title" data-i18n="accountSummary">Account summary</p>
+      <div id="profileInfo" class="dash-muted-text" data-i18n="loadingProfile">Loading...</div>
     </div>
   </div>
 
   <div id="lawyerProfile" class="dash-box hidden">
-    <h2>Availability &amp; Documents</h2>
+    <h2 data-i18n="availabilityDocs">Availability &amp; Documents</h2>
     <div class="dash-card">
       <p class="dash-card-title" data-i18n="availabilitySlots">Availability slots</p>
       <p class="slot-builder-intro" data-i18n="slotBuilderIntro">Pick a date and time, then add slots. Clients will choose from your list when booking.</p>
@@ -204,76 +204,76 @@
       </div>
     </div>
     <div class="dash-card">
-      <p class="dash-card-title">Credentials</p>
+      <p class="dash-card-title" data-i18n="credentials">Credentials</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <input id="documentInput" placeholder="Certificate URL" style="flex:1;min-width:200px;margin:0">
-        <button type="button" onclick="addLawyerDocument()">Add link</button>
+        <input id="documentInput" data-placeholder-key="certificateUrl" placeholder="Certificate URL" style="flex:1;min-width:200px;margin:0">
+        <button type="button" onclick="addLawyerDocument()" data-i18n="addLink">Add link</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <input id="lawyerDocumentFiles" type="file" multiple>
-        <button type="button" onclick="uploadLawyerDocuments()">Upload files</button>
+        <button type="button" onclick="uploadLawyerDocuments()" data-i18n="uploadFiles">Upload files</button>
       </div>
-      <small style="display:block;color:#6B5E50;margin-top:6px">Max 3 files, 2MB each.</small>
-      <div id="documentsList" style="margin-top:12px">No documents yet.</div>
+      <small style="display:block;color:#6B5E50;margin-top:6px" data-i18n="maxFilesHint">Max 3 files, 2MB each.</small>
+      <div id="documentsList" style="margin-top:12px"><span data-i18n="noDocuments">No documents yet.</span></div>
     </div>
   </div>
 
   <div id="appointmentChat" class="dash-box hidden">
-    <h2>Appointment Chat</h2>
+    <h2 data-i18n="appointmentChat">Appointment Chat</h2>
     <div class="dash-chat-layout">
       <div class="dash-chat-panel">
-        <div class="dash-chat-panel-head">Conversations</div>
+        <div class="dash-chat-panel-head" data-i18n="conversations">Conversations</div>
         <div id="chatConversationsList" class="dash-chat-panel-body"></div>
       </div>
       <div class="dash-chat-main">
-        <p id="chatPartnerLabel" class="dash-chat-partner-label">Choose a conversation.</p>
+        <p id="chatPartnerLabel" class="dash-chat-partner-label" data-i18n="chooseConversation">Choose a conversation.</p>
         <div id="chatPartnerCard" class="chat-partner-card hidden"></div>
         <div id="appointmentChatBody" class="dash-chat-messages"></div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <input id="appointmentChatInput" placeholder="Type your message…" style="flex:1;margin:0">
-          <button type="button" onclick="sendAppointmentMessage()">Send</button>
+          <input id="appointmentChatInput" data-i18n="typeMessage" placeholder="Type your message…" style="flex:1;margin:0">
+          <button type="button" onclick="sendAppointmentMessage()" data-i18n="sendBtn">Send</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="settings" class="dash-box hidden">
-    <h2>Settings</h2>
+    <h2 data-i18n="settingsTitle">Settings</h2>
     <div class="dash-card">
-      <p class="dash-card-title">Contact</p>
+      <p class="dash-card-title" data-i18n="contactInfo">Contact</p>
       <div class="dash-form-row">
-        <label for="settingsEmailInput">Email</label>
+        <label for="settingsEmailInput" data-i18n-label="emailLabel">Email</label>
         <input id="settingsEmailInput" type="email" style="max-width:400px">
       </div>
       <div class="dash-form-row">
-        <label for="settingsPhoneInput">Phone</label>
+        <label for="settingsPhoneInput" data-i18n-label="phoneLabel">Phone</label>
         <input id="settingsPhoneInput" type="tel" style="max-width:400px">
       </div>
       <div class="dash-actions">
-        <button type="button" onclick="saveAccountContact()">Save contact</button>
+        <button type="button" onclick="saveAccountContact()" data-i18n="saveContact">Save contact</button>
       </div>
     </div>
     <div class="dash-card">
-      <p class="dash-card-title">Password</p>
+      <p class="dash-card-title" data-i18n="passwordTitle">Password</p>
       <div class="dash-form-row">
-        <label for="settingsCurrentPassword">Current password</label>
+        <label for="settingsCurrentPassword" data-i18n-label="currentPassword">Current password</label>
         <input id="settingsCurrentPassword" type="password" style="max-width:400px">
       </div>
       <div class="dash-form-row">
-        <label for="settingsNewPassword">New password</label>
+        <label for="settingsNewPassword" data-i18n-label="newPassword">New password</label>
         <input id="settingsNewPassword" type="password" style="max-width:400px">
       </div>
       <div class="dash-form-row">
-        <label for="settingsConfirmPassword">Confirm new password</label>
+        <label for="settingsConfirmPassword" data-i18n-label="confirmPassword">Confirm new password</label>
         <input id="settingsConfirmPassword" type="password" style="max-width:400px">
       </div>
       <div class="dash-actions">
-        <button type="button" onclick="changeAccountPassword()">Change password</button>
+        <button type="button" onclick="changeAccountPassword()" data-i18n="changePassword">Change password</button>
       </div>
     </div>
     <div class="dash-card">
-      <p class="dash-card-title">Appearance</p>
-      <button type="button" onclick="toggleTheme()">Toggle theme</button>
+      <p class="dash-card-title" data-i18n="appearance">Appearance</p>
+      <button type="button" onclick="toggleTheme()" data-i18n="toggleTheme">Toggle theme</button>
     </div>
   </div>
 </main>

@@ -84,7 +84,11 @@ function initPageData(){
     }
   }
   if(document.body && document.body.dataset.page === 'admin'){
-    if(guardAdminPage()) loadAdminPanel();
+    if(guardAdminPage()){
+      loadAdminPanel();
+      applyDashboardHash();
+      if(!location.hash) showSection('adminOverview');
+    }
   }
   if(document.getElementById('signupRole')){
     onSignupRoleChange();
@@ -211,8 +215,20 @@ const dict = {
     minutesShort:"min", noBookingOptions:"No meeting types listed yet",
     loadingLawyers:"Loading lawyers...", noLawyersAvailable:"No lawyers available yet.", bookConsultation:"Book consultation", close:"Close",
     adminTitle:"Admin Control Center", adminSub:"Review lawyers who saved their profile or price range and are waiting to go live on the public lawyers page.",
+    adminOverview:"Dashboard", adminOverviewDesc:"Platform overview and quick access to every admin task.", adminQuickAccess:"Quick access",
+    adminNavOverview:"Overview", adminNavReview:"Review", adminNavAccounts:"Accounts", adminNavCommunication:"Communication", adminNavSystem:"System",
+    adminNavGroup:"Administration", adminPendingDesc:"Review new lawyer profiles and approve or reject them before they appear publicly.",
+    adminLawyersTitle:"Lawyers", adminLawyersDesc:"All lawyer accounts — approval status, suspension, and profile management.",
+    adminClientsTitle:"Clients", adminClientsDesc:"Client accounts only — separate from lawyer profiles.",
+    adminContactsDesc:"Messages sent through the site contact form.", adminActionsDesc:"Audit trail of approvals, rejections, and account changes.",
+    adminStatPending:"Pending approvals", adminStatLawyers:"Registered lawyers", adminStatClients:"Client accounts", adminStatUnread:"Unread messages",
+    adminSearchLawyers:"Search lawyers by name or email…", adminSearchClients:"Search clients by name or email…",
     adminContactsTitle:"Contact form messages", adminContactsEmpty:"No contact messages yet.", adminMarkRead:"Mark read", adminRead:"Read", adminUnread:"Unread",
-    pendingApprovals:"Pending lawyer approvals", usersLawyers:"Users & Lawyers", recentActions:"Recent Admin Actions",
+    pendingApprovals:"Pending approvals", usersLawyers:"Users & Lawyers", recentActions:"Activity log",
+    adminNoPending:"No lawyers awaiting approval. When a lawyer saves their profile or price range, they will appear here.",
+    adminNoActions:"No admin actions recorded yet.", adminNoLawyers:"No lawyer accounts yet.", adminNoClients:"No client accounts yet.",
+    adminDocuments:"Documents", adminNone:"None", adminJoined:"Joined", adminApprovalStatus:"Approval", adminAccountStatus:"Account",
+    adminRecentActivity:"Recent activity",
     siteHome:"Site home", approveLawyer:"Approve lawyer", rejectLawyer:"Reject", unread:"Unread",
     status:"Status", role:"Role", feeOnRequest:"Fee on request", confirm:"Confirm", cancel:"Cancel", cancelAppt:"Cancel appointment",
     statusPending:"Pending", statusAccepted:"Confirmed", statusCancelled:"Cancelled", statusDeclined:"Declined",
@@ -234,7 +250,25 @@ const dict = {
     lawyerWorkspace:"Lawyer Workspace", lawyerWorkspaceSub:"Manage your availability, documents, client requests, and appointment chats from your dashboard.",
     voiceInput:"Voice input", voiceStop:"Stop listening", voiceListening:"Listening…", voiceTranscribing:"Transcribing…",
     voiceServerFallback:"Server voice busy — using browser microphone…",
-    voiceNotSupported:"Voice input is not supported in this browser yet.", voiceError:"Voice input failed. Try again or type your message."
+    voiceNotSupported:"Voice input is not supported in this browser yet.", voiceError:"Voice input failed. Try again or type your message.",
+    voiceListeningHint:"Speak now — click the mic again when finished.",
+    voiceModelLoading:"Loading Egyptian voice model — please wait…",
+    voiceModelNotReady:"Voice model is still loading. Make sure the RAG API is running, wait about a minute, then try again.",
+    voiceServerRequired:"Accurate Egyptian voice needs the RAG API running (backend/start-rag.ps1).",
+    voiceTooShort:"Recording too short — speak for at least 2 seconds, then click the mic to stop.",
+    publicProfileDetailsTitle:"Public profile details (clients see these)", officeLocation:"Office location",
+    yearsExperience:"Years of experience", bookingOptionsClients:"Booking options (clients choose when booking)",
+    phoneExamplePh:"e.g. 01012345678", yearsExperiencePh:"e.g. 12",
+    locationPh:"City, district, or address clients should know", shortDescPh:"Brief headline for listings",
+    practiceDetailsPh:"Services, languages, office details…", feeMinPh:"Min", feeMaxPh:"Max",
+    selectDuration:"— Select duration —", credentials:"Credentials", certificateUrl:"Certificate URL",
+    addLink:"Add link", uploadFiles:"Upload files", maxFilesHint:"Max 3 files, 2MB each.",
+    noDocuments:"No documents yet.", noMessagesYet:"No messages yet. Start the conversation.",
+    chatWith:"Chat with", loadingProfile:"Loading…", viewDoc:"(view)", viewImage:"(view image)",
+    enterDocumentFirst:"Enter a document first", selectApptFirst:"Select an appointment first",
+    typeMessageToast:"Type a message",
+    previewPublicProfile:"Preview your public profile",
+    accountEditHint:"Edit public phone, location, and experience in the section above. Change login email in Settings."
   },
   ar:{
     home:"الرئيسية", lawyers:"المحامون", contact:"تواصل", login:"تسجيل الدخول", signup:"إنشاء حساب", dashboard:"لوحة التحكم", logout:"تسجيل الخروج",
@@ -293,8 +327,20 @@ const dict = {
     minutesShort:"دقيقة", noBookingOptions:"لم يُحدد نوع الاجتماع بعد",
     loadingLawyers:"جاري تحميل المحامين...", noLawyersAvailable:"لا يوجد محامون متاحون بعد.", bookConsultation:"حجز استشارة", close:"إغلاق",
     adminTitle:"مركز تحكم الإدارة", adminSub:"راجع المحامين الذين حفظوا ملفهم أو نطاق السعر وبانتظار النشر على صفحة المحامين.",
+    adminOverview:"لوحة التحكم", adminOverviewDesc:"نظرة عامة على المنصة ووصول سريع لكل مهام الإدارة.", adminQuickAccess:"وصول سريع",
+    adminNavOverview:"نظرة عامة", adminNavReview:"المراجعة", adminNavAccounts:"الحسابات", adminNavCommunication:"التواصل", adminNavSystem:"النظام",
+    adminNavGroup:"الإدارة", adminPendingDesc:"راجع ملفات المحامين الجدد واعتمدها أو ارفضها قبل ظهورها للجمهور.",
+    adminLawyersTitle:"المحامون", adminLawyersDesc:"جميع حسابات المحامين — حالة الموافقة والتعليق وإدارة الملف.",
+    adminClientsTitle:"العملاء", adminClientsDesc:"حسابات العملاء فقط — منفصلة عن ملفات المحامين.",
+    adminContactsDesc:"الرسائل المرسلة عبر نموذج التواصل في الموقع.", adminActionsDesc:"سجل الموافقات والرفض وتغييرات الحسابات.",
+    adminStatPending:"موافقات معلقة", adminStatLawyers:"محامون مسجلون", adminStatClients:"حسابات العملاء", adminStatUnread:"رسائل غير مقروءة",
+    adminSearchLawyers:"ابحث عن محامٍ بالاسم أو البريد…", adminSearchClients:"ابحث عن عميل بالاسم أو البريد…",
     adminContactsTitle:"رسائل نموذج التواصل", adminContactsEmpty:"لا توجد رسائل تواصل بعد.", adminMarkRead:"تعليم كمقروء", adminRead:"مقروء", adminUnread:"غير مقروء",
-    pendingApprovals:"موافقات المحامين المعلقة", usersLawyers:"المستخدمون والمحامون", recentActions:"آخر إجراءات الإدارة",
+    pendingApprovals:"موافقات معلقة", usersLawyers:"المستخدمون والمحامون", recentActions:"سجل النشاط",
+    adminNoPending:"لا يوجد محامون بانتظار الموافقة. عند حفظ المحامي لملفه أو نطاق السعر سيظهر هنا.",
+    adminNoActions:"لا توجد إجراءات إدارية بعد.", adminNoLawyers:"لا توجد حسابات محامين بعد.", adminNoClients:"لا توجد حسابات عملاء بعد.",
+    adminDocuments:"المستندات", adminNone:"لا يوجد", adminJoined:"تاريخ التسجيل", adminApprovalStatus:"الموافقة", adminAccountStatus:"الحساب",
+    adminRecentActivity:"آخر النشاط",
     siteHome:"الموقع", approveLawyer:"اعتماد المحامي", rejectLawyer:"رفض", unread:"غير مقروء",
     status:"الحالة", role:"الدور", feeOnRequest:"الرسوم عند الطلب", confirm:"تأكيد", cancel:"إلغاء", cancelAppt:"إلغاء الموعد",
     statusPending:"قيد الانتظار", statusAccepted:"مؤكد", statusCancelled:"ملغى", statusDeclined:"مرفوض",
@@ -316,7 +362,25 @@ const dict = {
     lawyerWorkspace:"مساحة المحامي", lawyerWorkspaceSub:"أدر مواعيدك ومستنداتك وطلبات العملاء ومحادثات المواعيد من لوحة التحكم.",
     voiceInput:"إدخال صوتي", voiceStop:"إيقاف الاستماع", voiceListening:"جاري الاستماع…", voiceTranscribing:"جاري التحويل إلى نص…",
     voiceServerFallback:"الصوت من الخادم مشغول — سيتم استخدام الميكروفون من المتصفح…",
-    voiceNotSupported:"الإدخال الصوتي غير مدعوم في هذا المتصفح بعد.", voiceError:"فشل الإدخال الصوتي. حاول مرة أخرى أو اكتب رسالتك."
+    voiceNotSupported:"الإدخال الصوتي غير مدعوم في هذا المتصفح بعد.", voiceError:"فشل الإدخال الصوتي. حاول مرة أخرى أو اكتب رسالتك.",
+    voiceListeningHint:"تحدث الآن — اضغط الميكروفون مرة أخرى عند الانتهاء.",
+    voiceModelLoading:"جاري تحميل نموذج الصوت المصري — انتظر قليلاً…",
+    voiceModelNotReady:"نموذج الصوت ما زال يُحمّل. تأكد أن خادم RAG يعمل، انتظر دقيقة، ثم حاول مرة أخرى.",
+    voiceServerRequired:"للتعرف الدقيق على العامية المصرية يجب تشغيل خادم RAG (backend/start-rag.ps1).",
+    voiceTooShort:"التسجيل قصير جداً — تحدث لمدة ثانيتين على الأقل ثم اضغط الميكروفون للإيقاف.",
+    publicProfileDetailsTitle:"تفاصيل الملف العام (يراها العملاء)", officeLocation:"موقع المكتب",
+    yearsExperience:"سنوات الخبرة", bookingOptionsClients:"خيارات الحجز (يختارها العميل عند الحجز)",
+    phoneExamplePh:"مثال: 01012345678", yearsExperiencePh:"مثال: 12",
+    locationPh:"المدينة أو المنطقة أو العنوان الذي يجب أن يعرفه العملاء", shortDescPh:"عنوان مختصر للقوائم",
+    practiceDetailsPh:"الخدمات واللغات وتفاصيل المكتب…", feeMinPh:"الحد الأدنى", feeMaxPh:"الحد الأقصى",
+    selectDuration:"— اختر المدة —", credentials:"المستندات والشهادات", certificateUrl:"رابط الشهادة",
+    addLink:"إضافة رابط", uploadFiles:"رفع ملفات", maxFilesHint:"حد أقصى 3 ملفات، 2MB لكل ملف.",
+    noDocuments:"لا توجد مستندات بعد.", noMessagesYet:"لا رسائل بعد. ابدأ المحادثة.",
+    chatWith:"محادثة مع", loadingProfile:"جاري التحميل…", viewDoc:"(عرض)", viewImage:"(عرض الصورة)",
+    enterDocumentFirst:"أدخل مستنداً أولاً", selectApptFirst:"اختر موعداً أولاً",
+    typeMessageToast:"اكتب رسالة",
+    previewPublicProfile:"معاينة ملفك العام",
+    accountEditHint:"عدّل الهاتف والموقع والخبرة في القسم أعلاه. غيّر بريد تسجيل الدخول من الإعدادات."
   }
 };
 
@@ -337,6 +401,15 @@ function translateSpecialtyName(name){
   const n = String(name || '');
   if(currentLang !== 'ar') return n;
   return (SPECIALTY_I18N[n] && SPECIALTY_I18N[n].ar) || n;
+}
+
+function populateConsultationDurationSelect(sel){
+  if(!sel) return;
+  const cur = sel.value;
+  const mins = [15, 30, 45, 60, 90, 120];
+  sel.innerHTML = `<option value="">${escapeHtml(t('selectDuration'))}</option>` +
+    mins.map(m => `<option value="${m}">${m} ${escapeHtml(t('minutesShort'))}</option>`).join('');
+  if(cur) sel.value = cur;
 }
 
 let currentLang="en";
@@ -1359,6 +1432,7 @@ function setLanguage(lang){
     const el = document.getElementById(id);
     if(el) populateSpecialtySelect(el, id === 'filterSpecialty');
   });
+  populateConsultationDurationSelect(document.getElementById('profileConsultationDuration'));
   renderLawyerRejectionNotice();
   refreshDynamicTranslations();
   if(document.getElementById('lawyerSlotsList')) renderLawyerSlotsList();
@@ -1394,11 +1468,25 @@ function refreshDynamicTranslations(){
   }
   if(document.getElementById('adminPendingLawyers') && getCurrentRole().startsWith('admin')){
     loadAdminPanel();
+    const activeSection = (location.hash || '').replace('#', '').trim() || 'adminOverview';
+    updateAdminSectionHeader(activeSection);
   }
   const bookTitle = document.getElementById('bookingTitle');
   if(bookTitle) bookTitle.textContent = t('bookTitle');
   const bookSubmit = document.getElementById('bookSubmit');
   if(bookSubmit && !bookSubmit.disabled) bookSubmit.textContent = t('confirm');
+  const chatLabel = document.getElementById('chatPartnerLabel');
+  if(chatLabel){
+    if(currentChatBookingId && currentChatPartnerName){
+      chatLabel.textContent = `${t('chatWith')} ${currentChatPartnerName}`;
+    } else if(!currentChatBookingId){
+      chatLabel.textContent = t('chooseConversation');
+    }
+  }
+  if(document.getElementById('appointmentChatBody') && currentChatBookingId) loadAppointmentMessages();
+  if(document.getElementById('documentsList')) renderLawyerDocuments();
+  const u = getCurrentUserObj();
+  if(document.getElementById('profileInfo') && u) renderAccountProfileInfo(u);
 }
 
 /* ===== Search (filter lawyers or send to AI) ===== */
@@ -1504,15 +1592,153 @@ function triggerFileDownload(blob, filename){
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
 }
 
+function formatDocInline(text){
+  let s = escapeHtml(String(text || ''));
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\[(.+?)\]/g, '<span class="doc-placeholder">[$1]</span>');
+  return s;
+}
+
+function parseLegalDocumentBodyToHtml(text){
+  const lines = String(text || '').split(/\r?\n/);
+  const parts = [];
+  let inList = false;
+
+  function closeList(){
+    if(inList){ parts.push('</ul>'); inList = false; }
+  }
+
+  for(const line of lines){
+    const trimmed = line.trim();
+    if(!trimmed){
+      closeList();
+      parts.push('<p class="doc-spacer">&nbsp;</p>');
+      continue;
+    }
+    const sectionHeading = trimmed.match(/^\*\*(.+)\*\*$/);
+    if(sectionHeading){
+      closeList();
+      parts.push(`<h2 class="doc-section">${escapeHtml(sectionHeading[1])}</h2>`);
+      continue;
+    }
+    if(/^(?:البند\s*)?\(?\d+\)?[\.\)\-–:]\s*/.test(trimmed) || /^المادة\s*(?:رقم\s*)?\(?\d+\)?/.test(trimmed)){
+      closeList();
+      parts.push(`<p class="doc-clause">${formatDocInline(trimmed)}</p>`);
+      continue;
+    }
+    if(/^[•\-–]\s+/.test(trimmed)){
+      if(!inList){ parts.push('<ul class="doc-ul">'); inList = true; }
+      parts.push(`<li class="doc-li">${formatDocInline(trimmed.replace(/^[•\-–]\s+/, ''))}</li>`);
+      continue;
+    }
+    if(/^_{3,}$/.test(trimmed) || /^-{3,}$/.test(trimmed)){
+      closeList();
+      parts.push('<hr class="doc-hr" />');
+      continue;
+    }
+    closeList();
+    parts.push(`<p class="doc-p">${formatDocInline(trimmed)}</p>`);
+  }
+  closeList();
+  return parts.join('\n');
+}
+
+function buildLegalDocumentWordHtml(documentTitle, documentText){
+  const title = escapeHtml(String(documentTitle || 'مسودة قانونية').trim());
+  const bodyHtml = parseLegalDocumentBodyToHtml(documentText);
+  const today = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<meta name="ProgId" content="Word.Document">
+<meta name="Generator" content="MyLegalGuide">
+<title>${title}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  @page { size: A4; margin: 2.5cm 2cm 2.5cm 2cm; }
+  body {
+    font-family: 'Traditional Arabic', 'Arial', 'Tahoma', sans-serif;
+    font-size: 14pt;
+    line-height: 1.9;
+    direction: rtl;
+    text-align: right;
+    color: #1a1a1a;
+    margin: 0;
+    padding: 24px 32px;
+  }
+  .doc-header { text-align: center; margin-bottom: 28px; border-bottom: 2px solid #2c5282; padding-bottom: 18px; }
+  .doc-kicker { font-size: 11pt; color: #4a5568; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .doc-title { font-size: 22pt; font-weight: bold; color: #1a365d; margin: 8px 0 6px; }
+  .doc-meta { font-size: 11pt; color: #718096; }
+  .doc-body { margin-top: 8px; }
+  .doc-section {
+    font-size: 15pt;
+    font-weight: bold;
+    color: #2c5282;
+    margin: 22px 0 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #cbd5e0;
+  }
+  .doc-p { margin: 0 0 10px; text-align: justify; text-justify: inter-word; }
+  .doc-clause {
+    margin: 0 0 12px;
+    padding-right: 14px;
+    text-align: justify;
+    border-right: 3px solid #e2e8f0;
+  }
+  .doc-ul { margin: 6px 0 14px; padding-right: 28px; }
+  .doc-li { margin-bottom: 6px; text-align: justify; }
+  .doc-placeholder {
+    background: #fff8e6;
+    border-bottom: 1px dashed #d69e2e;
+    padding: 0 4px;
+    color: #744210;
+  }
+  .doc-spacer { margin: 0; height: 6px; line-height: 6px; }
+  .doc-hr { border: none; border-top: 1px solid #e2e8f0; margin: 18px 0; }
+  .doc-footer {
+    margin-top: 32px;
+    padding-top: 14px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 10pt;
+    color: #718096;
+    text-align: center;
+    font-style: italic;
+  }
+  .sig-table { width: 100%; margin-top: 24px; border-collapse: collapse; }
+  .sig-table td { width: 50%; vertical-align: top; padding: 12px 8px; text-align: center; }
+  .sig-line { display: block; margin-top: 48px; border-top: 1px solid #333; width: 80%; margin-left: auto; margin-right: auto; }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <div class="doc-kicker">جمهورية مصر العربية — مسودة قانونية</div>
+    <h1 class="doc-title">${title}</h1>
+    <div class="doc-meta">تاريخ الإعداد: ${escapeHtml(today)}</div>
+  </div>
+  <div class="doc-body">
+    ${bodyHtml}
+  </div>
+  <div class="doc-footer">
+    تم إنشاء هذه المسودة بواسطة MyLegalGuide للأغراض الإرشادية فقط — يُرجى مراجعتها من محامٍ مرخص قبل التوقيع أو الاستخدام الرسمي.
+  </div>
+</body>
+</html>`;
+}
+
 function downloadGeneratedDocument(documentText, documentTitle, format){
   const title = sanitizeDownloadFilename(documentTitle, 'legal_document');
   const text = String(documentText || '');
   if(!text.trim()) return;
   if(format === 'doc'){
-    const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head><body style="font-family:'Traditional Arabic',Arial,sans-serif;font-size:14pt;line-height:1.8;direction:rtl;text-align:right;"><div style="white-space:pre-wrap;">${escapeHtml(text)}</div></body></html>`;
+    const html = buildLegalDocumentWordHtml(documentTitle, text);
     triggerFileDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), title + '.doc');
   } else {
-    triggerFileDownload(new Blob(['\ufeff', text], { type: 'text/plain;charset=utf-8' }), title + '.txt');
+    const plain = text
+      .replace(/^\*\*(.+)\*\*$/gm, '\n═══ $1 ═══\n')
+      .replace(/^$/gm, '');
+    triggerFileDownload(new Blob(['\ufeff', plain], { type: 'text/plain;charset=utf-8' }), title + '.txt');
   }
 }
 
@@ -2550,6 +2776,20 @@ function initDashboardSession(){
   loadAccountSettings();
 }
 
+function refreshChatBookingsOnly(){
+  const token = localStorage.getItem('lg_token');
+  if(!token) return Promise.resolve();
+  return fetch(apiUrl('/api/bookings'), { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok) return;
+      chatBookingsCache = Array.isArray(res.bookings) ? res.bookings : [];
+      computeUnreadFromBookings(chatBookingsCache);
+      renderChatConversations();
+    })
+    .catch(() => {});
+}
+
 function loadBookingsIntoDashboard(onDone){
   const token = localStorage.getItem('lg_token');
   if(!token) return;
@@ -2569,6 +2809,7 @@ function loadUserDashboard(){
   const token = localStorage.getItem('lg_token');
   if(!token){ window.location.href = 'auth.html'; return; }
   initDashboardSession();
+  const stayOnChat = (location.hash || '').replace('#', '').trim() === 'appointmentChat' && !!currentChatBookingId;
   loadBookingsIntoDashboard((res)=>{
     const list = document.getElementById('userAppointmentsList');
     const bookings = res.bookings || [];
@@ -2580,7 +2821,12 @@ function loadUserDashboard(){
       else list.innerHTML = joinAppointmentCards(active.map(b => renderUserBookingCard(b)));
     }
     applyDashboardHash();
-    if(!location.hash) showSection('appointments');
+    if(stayOnChat){
+      showSection('appointmentChat');
+      loadAppointmentMessages();
+    } else if(!location.hash) {
+      showSection('appointments');
+    }
   });
 }
 
@@ -2633,8 +2879,14 @@ function loadLawyerDashboard(){
         if(!res.bookings || !res.bookings.length) list.innerHTML = `<p class="appointments-empty">${escapeHtml(t('noBookings'))}</p>`;
         else list.innerHTML = joinAppointmentCards(res.bookings.map(b => renderLawyerBookingCard(b)));
       }
+      const stayOnChat = (location.hash || '').replace('#', '').trim() === 'appointmentChat' && !!currentChatBookingId;
       applyDashboardHash();
-      if(!location.hash) showSection('lawyerBookings');
+      if(stayOnChat){
+        showSection('appointmentChat');
+        loadAppointmentMessages();
+      } else if(!location.hash) {
+        showSection('lawyerBookings');
+      }
     });
   });
 }
@@ -3010,9 +3262,29 @@ async function saveLawyerPracticeFromProfile(){
   } finally {
     if(btn){
       btn.disabled = false;
-      btn.textContent = btn.dataset.prevText || 'Save practice info';
+      btn.textContent = btn.dataset.prevText || t('savePractice');
     }
   }
+}
+
+function formatAccountRole(role){
+  const r = String(role || '').toLowerCase();
+  if(r.startsWith('law')) return t('lawyer');
+  if(r.startsWith('admin')) return 'Admin';
+  return t('client');
+}
+
+function renderAccountProfileInfo(u){
+  const info = document.getElementById('profileInfo');
+  if(!info || !u) return;
+  const statusLine = isLawyerRole(u.role) && u.lawyerStatus
+    ? `<p><strong>${escapeHtml(t('status'))}:</strong> ${escapeHtml(u.lawyerStatus)}</p>` : '';
+  const feedbackLine = isLawyerRole(u.role) && String(u.rejectionReason || '').trim()
+    ? `<p><strong>${escapeHtml(t('rejectedHint'))}</strong> ${escapeHtml(u.rejectionReason)}</p>` : '';
+  const profileLink = isLawyerRole(u.role) && u.email
+    ? `<p style="margin-top:10px"><a href="${escapeHtml(lawyerProfilePageUrl(u.email))}" target="_blank" rel="noopener">${escapeHtml(t('previewPublicProfile'))}</a></p>`
+    : '';
+  info.innerHTML = `<p><strong>${escapeHtml(t('role'))}:</strong> ${escapeHtml(formatAccountRole(u.role))}</p>${statusLine}${feedbackLine}<p><strong>${escapeHtml(t('emailLabel'))}:</strong> ${escapeHtml(u.email || '-')}</p><p><strong>${escapeHtml(t('phoneLabel'))}:</strong> ${escapeHtml(u.phone || '-')}</p><p style="font-size:13px;margin-top:8px">${escapeHtml(t('accountEditHint'))}</p>${profileLink}`;
 }
 
 function loadAccountProfile(){
@@ -3024,17 +3296,7 @@ function loadAccountProfile(){
     if(!res.ok || !res.user) return;
     const u = res.user;
     syncLocalUser(u);
-    const info = document.getElementById('profileInfo');
-    if(info){
-      const statusLine = isLawyerRole(u.role) && u.lawyerStatus
-        ? `<p><strong>Status:</strong> ${escapeHtml(u.lawyerStatus)}</p>` : '';
-      const feedbackLine = isLawyerRole(u.role) && String(u.rejectionReason || '').trim()
-        ? `<p><strong>${escapeHtml(t('rejectedHint'))}</strong> ${escapeHtml(u.rejectionReason)}</p>` : '';
-      const profileLink = isLawyerRole(u.role) && u.email
-        ? `<p style="margin-top:10px"><a href="${escapeHtml(lawyerProfilePageUrl(u.email))}" target="_blank" rel="noopener">Preview your public profile</a></p>`
-        : '';
-      info.innerHTML = `<p><strong>Role:</strong> ${escapeHtml(u.role || 'User')}</p>${statusLine}${feedbackLine}<p><strong>Email:</strong> ${escapeHtml(u.email || '-')}</p><p><strong>Phone:</strong> ${escapeHtml(u.phone || '-')}</p><p style="font-size:13px;margin-top:8px">Edit public phone, location, and experience in the section above. Change login email in Settings.</p>${profileLink}`;
-    }
+    renderAccountProfileInfo(u);
     const nameInput = document.getElementById('accountNameInput');
     if(nameInput) nameInput.value = u.name || '';
     const photoBox = document.getElementById('accountProfilePhotoBox');
@@ -3242,7 +3504,7 @@ function addLawyerDocument(){
   const input = document.getElementById('documentInput');
   const value = (input || {}).value || '';
   const doc = value.trim();
-  if(!doc){ toast('Enter a document first'); return }
+  if(!doc){ toast(t('enterDocumentFirst')); return }
   lawyerDocumentsCache.push(doc);
   if(input) input.value = '';
   renderLawyerDocuments();
@@ -3253,7 +3515,7 @@ function renderLawyerDocuments(){
   const list = document.getElementById('documentsList');
   if(!list) return;
   if(!lawyerDocumentsCache.length){
-    list.innerText = 'No documents yet.';
+    list.innerHTML = `<span>${escapeHtml(t('noDocuments'))}</span>`;
     return;
   }
   list.innerHTML = lawyerDocumentsCache.map((d, i)=>{
@@ -3266,10 +3528,11 @@ function renderLawyerDocuments(){
       if(data.startsWith('data:')){
         const parsed = parseLawyerDocument(raw);
         const isImg = parsed && parsed.isImage;
-        content = `<button type="button" class="admin-doc-view-btn" style="font-size:inherit;padding:2px 8px" onclick="openLawyerDocumentPreview(${i})">${escapeHtml(fileName)}${isImg ? ' (view image)' : ' (view)'}</button>`;
+        const viewLabel = isImg ? t('viewImage') : t('viewDoc');
+        content = `<button type="button" class="admin-doc-view-btn" style="font-size:inherit;padding:2px 8px" onclick="openLawyerDocumentPreview(${i})">${escapeHtml(fileName)} ${escapeHtml(viewLabel)}</button>`;
       }
     }
-    return `<div style="margin-bottom:6px"><span>${content}</span> <button type="button" onclick="removeLawyerDocument(${i})">Remove</button></div>`;
+    return `<div style="margin-bottom:6px"><span>${content}</span> <button type="button" onclick="removeLawyerDocument(${i})">${escapeHtml(t('remove'))}</button></div>`;
   }).join('');
 }
 
@@ -3333,7 +3596,13 @@ function showSection(id){
     settings: 'settingsNavBtn',
     lawyerBookings: 'lawyerBookingsNavBtn',
     lawyerProfile: 'lawyerProfileNavBtn',
-    appointmentChat: 'chatNavBtn'
+    appointmentChat: 'chatNavBtn',
+    adminOverview: 'adminOverviewNavBtn',
+    adminPending: 'adminPendingNavBtn',
+    adminLawyers: 'adminLawyersNavBtn',
+    adminClients: 'adminClientsNavBtn',
+    adminContacts: 'adminContactsNavBtn',
+    adminActions: 'adminActionsNavBtn'
   };
   document.querySelectorAll('.sidebar-nav-btn').forEach(btn=>btn.classList.remove('active'));
   const activeId = map[id];
@@ -3341,6 +3610,34 @@ function showSection(id){
     const btn = document.getElementById(activeId);
     if(btn) btn.classList.add('active');
   }
+  updateAdminSectionHeader(id);
+  if(window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+  const hashId = String(id || '').trim();
+  if(hashId && document.getElementById(hashId)){
+    const nextHash = '#' + hashId;
+    if(location.hash !== nextHash){
+      try { history.replaceState(null, '', nextHash); } catch(_e){ location.hash = hashId; }
+    }
+  }
+}
+
+const ADMIN_SECTION_META = {
+  adminOverview: { titleKey: 'adminOverview', subKey: 'adminOverviewDesc' },
+  adminPending: { titleKey: 'pendingApprovals', subKey: 'adminPendingDesc' },
+  adminLawyers: { titleKey: 'adminLawyersTitle', subKey: 'adminLawyersDesc' },
+  adminClients: { titleKey: 'adminClientsTitle', subKey: 'adminClientsDesc' },
+  adminContacts: { titleKey: 'adminContactsTitle', subKey: 'adminContactsDesc' },
+  adminActions: { titleKey: 'recentActions', subKey: 'adminActionsDesc' }
+};
+
+function updateAdminSectionHeader(sectionId){
+  if(!document.body || document.body.dataset.page !== 'admin') return;
+  const meta = ADMIN_SECTION_META[sectionId];
+  if(!meta) return;
+  const title = document.getElementById('adminPageTitle');
+  const sub = document.getElementById('adminPageSub');
+  if(title) title.textContent = t(meta.titleKey);
+  if(sub) sub.textContent = t(meta.subKey);
 }
 
 function logout(){
@@ -3417,7 +3714,7 @@ function openAppointmentChat(bookingId, partnerName){
   currentChatBookingId = conv ? conv.primaryBookingId : bookingId;
   currentChatPartnerName = (conv && conv.partnerName) || partnerName || 'Client';
   const label = document.getElementById('chatPartnerLabel');
-  if(label) label.innerText = `Chat with ${currentChatPartnerName}`;
+  if(label) label.innerText = `${t('chatWith')} ${currentChatPartnerName}`;
   const role = getCurrentRole();
   if(!role.startsWith('law') && !role.startsWith('admin')){
     const active = chatBookingsCache.find(b=>b.id===currentChatBookingId) || booking;
@@ -3449,7 +3746,7 @@ function loadAppointmentMessages(){
     .flatMap(b => (Array.isArray(b.messages) ? b.messages : []))
     .sort((a,b)=> String(a.at || '').localeCompare(String(b.at || '')));
   if(!messages.length){
-    body.innerText = 'No messages yet. Start the conversation.';
+    body.innerText = t('noMessagesYet');
     return;
   }
   body.innerHTML = messages.map(m=>{
@@ -3465,8 +3762,8 @@ function sendAppointmentMessage(){
   const token = localStorage.getItem('lg_token');
   const input = document.getElementById('appointmentChatInput');
   const text = ((input || {}).value || '').trim();
-  if(!token || !currentChatBookingId){ toast('Select an appointment first'); return }
-  if(!text){ toast('Type a message'); return }
+  if(!token || !currentChatBookingId){ toast(t('selectApptFirst')); return }
+  if(!text){ toast(t('typeMessageToast')); return }
   fetch(apiUrl(`/api/book/${currentChatBookingId}/message`), {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + token },
@@ -3476,8 +3773,10 @@ function sendAppointmentMessage(){
   .then(res=>{
     if(res.ok){
       if(input) input.value = '';
-      reloadCurrentDashboard();
-      loadAppointmentMessages();
+      refreshChatBookingsOnly().then(() => {
+        showSection('appointmentChat');
+        loadAppointmentMessages();
+      });
     } else {
       toast(res.error || 'Failed to send');
     }
@@ -3501,14 +3800,131 @@ function guardAdminPage(){
   return true;
 }
 
+function isAdminLawyerAccount(user){
+  return String((user && user.role) || '').toLowerCase().startsWith('law');
+}
+
+function isAdminClientAccount(user){
+  const role = String((user && user.role) || '').toLowerCase();
+  return !role.startsWith('law') && !role.startsWith('admin');
+}
+
+function adminFormatJoined(iso){
+  if(!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch(_e){
+    return String(iso);
+  }
+}
+
+function adminStatusPill(label, tone){
+  return `<span class="admin-pill admin-pill--${tone}">${escapeHtml(label)}</span>`;
+}
+
+function adminAccountCell(user){
+  const name = escapeHtml(user.name || '—');
+  const email = escapeHtml(user.email || '');
+  return `<div class="admin-account-cell"><strong>${name}</strong><span>${email}</span></div>`;
+}
+
+function adminUserMatchesQuery(user, query){
+  const q = String(query || '').trim().toLowerCase();
+  if(!q) return true;
+  return String(user.name || '').toLowerCase().includes(q) || String(user.email || '').toLowerCase().includes(q);
+}
+
+function adminLawyerStatusTone(status){
+  const st = String(status || '').toLowerCase();
+  if(st === 'approved') return 'success';
+  if(st === 'pending') return 'warning';
+  if(st === 'rejected') return 'danger';
+  return 'neutral';
+}
+
+function adminAccountTone(isActive){
+  return isActive !== false ? 'success' : 'danger';
+}
+
+function adminLawyerActions(user){
+  const st = String(user.lawyerStatus || '').toLowerCase();
+  const email = escapeJs(user.email);
+  return `<div class="admin-table-actions">${st === 'pending' ? `<button type="button" class="admin-btn-sm admin-btn-approve" onclick="approveLawyer('${email}')">${escapeHtml(t('approve'))}</button><button type="button" class="admin-btn-sm admin-btn-danger" onclick="rejectLawyer('${email}')">${escapeHtml(t('rejectLawyer'))}</button>` : ''}<button type="button" class="admin-btn-sm admin-btn-muted" onclick="toggleUserActive('${email}')">${escapeHtml(t('suspend'))}</button><button type="button" class="admin-btn-sm admin-btn-danger" onclick="deleteUserSoft('${email}')">${escapeHtml(t('delete'))}</button></div>`;
+}
+
+function adminClientActions(user){
+  const email = escapeJs(user.email);
+  return `<div class="admin-table-actions"><button type="button" class="admin-btn-sm admin-btn-muted" onclick="toggleUserActive('${email}')">${escapeHtml(t('suspend'))}</button><button type="button" class="admin-btn-sm admin-btn-danger" onclick="deleteUserSoft('${email}')">${escapeHtml(t('delete'))}</button></div>`;
+}
+
+let adminUsersCache = [];
+let adminActionsCache = [];
+
+function updateAdminStats(apps, users, contacts){
+  const allUsers = (users && users.ok && Array.isArray(users.users)) ? users.users : [];
+  adminUsersCache = allUsers;
+  const pendingCount = (apps && apps.ok && Array.isArray(apps.applications)) ? apps.applications.length : 0;
+  const lawyerCount = allUsers.filter(u => isAdminLawyerAccount(u) && !u.deletedAt).length;
+  const clientCount = allUsers.filter(u => isAdminClientAccount(u) && !u.deletedAt).length;
+  const contactList = (contacts && contacts.ok && Array.isArray(contacts.contacts)) ? contacts.contacts : [];
+  const unreadCount = contactList.filter(c => !c.isRead).length;
+
+  function setBadge(id, count, muted){
+    const badge = document.getElementById(id);
+    if(!badge) return;
+    if(count > 0){
+      badge.textContent = String(count);
+      badge.classList.remove('hidden');
+      badge.classList.toggle('admin-nav-badge--muted', !!muted);
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  setBadge('adminPendingBadge', pendingCount, false);
+  setBadge('adminContactsUnreadBadge', unreadCount, false);
+  setBadge('adminLawyersCountBadge', lawyerCount, true);
+  setBadge('adminClientsCountBadge', clientCount, true);
+
+  const stats = {
+    adminStatPending: pendingCount,
+    adminStatLawyers: lawyerCount,
+    adminStatClients: clientCount,
+    adminStatUnread: unreadCount,
+    adminQuickPending: pendingCount,
+    adminQuickLawyers: lawyerCount,
+    adminQuickClients: clientCount,
+    adminQuickUnread: unreadCount
+  };
+  Object.keys(stats).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = String(stats[id]);
+  });
+}
+
+function renderAdminOverviewRecent(){
+  const box = document.getElementById('adminOverviewRecent');
+  if(!box) return;
+  const actions = Array.isArray(adminActionsCache) ? adminActionsCache.slice(0, 5) : [];
+  if(!actions.length){
+    box.innerHTML = '';
+    return;
+  }
+  box.innerHTML = `<h3 class="admin-overview-recent-title">${escapeHtml(t('adminRecentActivity'))}</h3>` + actions.map(a=>`<div class="admin-action-item admin-action-item--compact"><span class="admin-action-type">${escapeHtml(a.action || '')}</span><span class="admin-action-target">${escapeHtml(a.targetEmail || '')}</span><span class="admin-action-meta">${escapeHtml(a.at || '')}</span></div>`).join('');
+}
+
 function loadAdminPanel(){
   if(!guardAdminPage()) return;
   const pendingBox = document.getElementById('adminPendingLawyers');
-  const usersBox = document.getElementById('adminUsersTable');
+  const lawyersBox = document.getElementById('adminLawyersTable');
+  const clientsBox = document.getElementById('adminClientsTable');
   const actionsBox = document.getElementById('adminActionsLog');
+  const contactsBox = document.getElementById('adminContactsTable');
   if(pendingBox) pendingBox.innerText = 'Loading pending applications…';
-  if(usersBox) usersBox.innerText = 'Loading users…';
+  if(lawyersBox) lawyersBox.innerText = 'Loading lawyers…';
+  if(clientsBox) clientsBox.innerText = 'Loading clients…';
   if(actionsBox) actionsBox.innerText = 'Loading actions…';
+  if(contactsBox) contactsBox.innerText = 'Loading messages…';
 
   Promise.all([
     fetch(apiUrl('/api/admin/lawyer-applications'), { headers: apiAuthHeaders() }).then(r=>r.json()),
@@ -3517,25 +3933,28 @@ function loadAdminPanel(){
     fetch(apiUrl('/api/admin/contacts'), { headers: apiAuthHeaders() }).then(r=>r.json())
   ])
   .then(([apps, users, actions, contacts])=>{
+    adminActionsCache = (actions && actions.ok && Array.isArray(actions.actions)) ? actions.actions : [];
     renderAdminPending(apps);
-    renderAdminUsers(users);
+    renderAdminLawyers(users);
+    renderAdminClients(users);
     renderAdminActions(actions);
     renderAdminContacts(contacts);
-    const count = (apps.ok && Array.isArray(apps.applications)) ? apps.applications.length : 0;
-    const badge = document.getElementById('adminPendingBadge');
-    if(badge){
-      if(count > 0){
-        badge.textContent = String(count);
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-    }
+    updateAdminStats(apps, users, contacts);
+    renderAdminOverviewRecent();
+    if(window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
   })
   .catch(()=>{
     toast('Failed to load admin panel');
     if(pendingBox) pendingBox.innerText = 'Could not load. Check that you are logged in as admin and the server is running.';
   });
+}
+
+function filterAdminLawyers(query){
+  renderAdminLawyers({ ok: true, users: adminUsersCache }, query);
+}
+
+function filterAdminClients(query){
+  renderAdminClients({ ok: true, users: adminUsersCache }, query);
 }
 
 let adminDocumentCache = {};
@@ -3686,40 +4105,43 @@ function openLawyerDocumentPreview(index){
 function renderAdminPending(res){
   const box = document.getElementById('adminPendingLawyers');
   if(!box) return;
-  if(!res.ok){ box.innerHTML = `<p style="color:#991b1b">${escapeHtml(res.error || 'Failed to load applications')}</p>`; return; }
+  if(!res.ok){ box.innerHTML = `<p class="admin-empty-msg" style="color:#991b1b">${escapeHtml(res.error || 'Failed to load applications')}</p>`; return; }
   const apps = Array.isArray(res.applications) ? res.applications : [];
   registerAdminDocumentsForApps(apps);
   if(!apps.length){
-    box.innerHTML = `<p style="color:#6B5E50;margin:0">${escapeHtml(currentLang === 'ar' ? 'لا يوجد محامون بانتظار الموافقة. عند حفظ المحامي لملفه أو نطاق السعر سيظهر هنا.' : 'No lawyers awaiting approval. When a lawyer saves their profile or price range, they will appear here.')}</p>`;
+    box.innerHTML = `<p class="admin-empty-msg">${escapeHtml(t('adminNoPending'))}</p>`;
     return;
   }
-  box.innerHTML = apps.map(a=>{
+  box.innerHTML = `<div class="admin-pending-list">${apps.map(a=>{
     const fees = formatPriceRange({ feeMin: a.feeMin, feeMax: a.feeMax });
     const pic = a.profilePic
       ? lawyerAvatarHtml({ name: a.name, profilePic: a.profilePic }, 'admin')
       : `<div class="lawyer-avatar lawyer-avatar--admin">${escapeHtml(lawyerInitials(a.name))}</div>`;
+    const docs = (Array.isArray(a.documents) && a.documents.length)
+      ? a.documents.map((d, di)=>renderAdminDocument(d, a.email, di)).join('')
+      : `<span class="dash-muted-text">${escapeHtml(t('adminNone'))}</span>`;
     return `<div class="admin-pending-card">
       <div class="admin-pending-card-inner">
         ${pic}
-        <div style="flex:1;min-width:200px">
+        <div style="flex:1;min-width:220px">
           <div style="font-weight:700;font-size:16px">${escapeHtml(a.name)}</div>
-          <div style="font-size:13px;color:#6B5E50">${escapeHtml(a.email)}${a.phone ? ' · ' + escapeHtml(a.phone) : ''}</div>
-          <div style="margin-top:8px;font-size:14px;line-height:1.5">
-            <div><strong>Specialty:</strong> ${escapeHtml(a.specialty || '-')}</div>
-            <div><strong>Price range:</strong> ${escapeHtml(fees)}</div>
-            ${a.gender ? `<div><strong>Gender:</strong> ${escapeHtml(a.gender)}</div>` : ''}
-            ${a.description ? `<div style="margin-top:6px"><strong>Summary:</strong> ${escapeHtml(a.description)}</div>` : ''}
-            ${a.practiceDetails ? `<div style="margin-top:4px"><strong>Practice details:</strong> ${escapeHtml(a.practiceDetails)}</div>` : ''}
-          </div>
-          <div style="margin-top:8px;font-size:13px"><strong>Documents:</strong> ${(Array.isArray(a.documents) && a.documents.length) ? a.documents.map((d, di)=>renderAdminDocument(d, a.email, di)).join('') : 'None'}</div>
-          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <div class="dash-muted-text" style="font-size:13px;margin-top:2px">${escapeHtml(a.email)}${a.phone ? ' · ' + escapeHtml(a.phone) : ''}</div>
+          <dl class="admin-pending-meta">
+            <div><dt>${escapeHtml(t('specialty'))}</dt><dd>${escapeHtml(a.specialty || '-')}</dd></div>
+            <div><dt>${escapeHtml(t('priceRange'))}</dt><dd>${escapeHtml(fees)}</dd></div>
+            ${a.gender ? `<div><dt>${escapeHtml(t('genderShown'))}</dt><dd>${escapeHtml(a.gender)}</dd></div>` : ''}
+          </dl>
+          ${a.description ? `<div class="admin-pending-summary"><strong>${escapeHtml(t('shortDesc'))}:</strong> ${escapeHtml(a.description)}</div>` : ''}
+          ${a.practiceDetails ? `<div class="admin-pending-practice"><strong>${escapeHtml(t('practiceDetails'))}:</strong> ${escapeHtml(a.practiceDetails)}</div>` : ''}
+          <div class="admin-pending-docs"><strong>${escapeHtml(t('adminDocuments'))}:</strong> ${docs}</div>
+          <div class="admin-pending-actions">
             <button type="button" onclick="approveLawyer('${escapeJs(a.email)}')">${escapeHtml(t('approveLawyer'))}</button>
-            <button type="button" onclick="rejectLawyer('${escapeJs(a.email)}')" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca">${escapeHtml(t('rejectLawyer'))}</button>
+            <button type="button" class="admin-btn-danger" onclick="rejectLawyer('${escapeJs(a.email)}')">${escapeHtml(t('rejectLawyer'))}</button>
           </div>
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 }
 
 function renderAdminDocument(doc, email, index){
@@ -3735,56 +4157,69 @@ function renderAdminDocument(doc, email, index){
   return `<div class="admin-doc-row">${escapeHtml(String(doc || ''))}</div>`;
 }
 
-function renderAdminUsers(res){
-  const box = document.getElementById('adminUsersTable');
+function renderAdminLawyers(res, query){
+  const box = document.getElementById('adminLawyersTable');
   if(!box) return;
-  if(!res.ok){ box.innerText = res.error || 'Failed'; return; }
-  const users = Array.isArray(res.users) ? res.users : [];
-  const header = `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;font-weight:700;padding:8px 0;border-bottom:2px solid #E4D9CC;font-size:13px"><div>Email</div><div>Role</div><div>Lawyer status</div><div>Account</div><div>Actions</div></div>`;
-  box.innerHTML = header + users.map(u=>{
-    const st = String(u.lawyerStatus || '').toLowerCase();
-    const statusStyle = st === 'pending' ? 'color:#9A7B4F;font-weight:700' : (st === 'rejected' ? 'color:#991b1b' : 'color:#4A3F32');
-    const rowBg = st === 'pending' ? 'background:#FAF3E8' : '';
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center;border-bottom:1px solid #E4D9CC;padding:8px 0;${rowBg}"><div>${escapeHtml(u.email)} ${u.deletedAt ? '<span style="color:#dc2626">(deleted)</span>' : ''}</div><div>${escapeHtml(u.role || '-')}</div><div style="${statusStyle}">${escapeHtml(u.lawyerStatus || '-')}</div><div>${u.isActive ? 'active' : 'suspended'}</div><div>${u.role && String(u.role).toLowerCase().startsWith('admin') ? '' : `${st === 'pending' ? `<button type="button" onclick="approveLawyer('${escapeJs(u.email)}')">${escapeHtml(t('approve'))}</button> ` : ''}<button type="button" onclick="toggleUserActive('${escapeJs(u.email)}')">${escapeHtml(t('suspend'))}</button> <button type="button" onclick="deleteUserSoft('${escapeJs(u.email)}')">${escapeHtml(t('delete'))}</button>`}</div></div>`;
-  }).join('');
+  if(!res.ok){ box.innerHTML = `<p class="admin-empty-msg" style="color:#991b1b">${escapeHtml(res.error || 'Failed')}</p>`; return; }
+  const lawyers = (Array.isArray(res.users) ? res.users : []).filter(isAdminLawyerAccount).filter(u=>adminUserMatchesQuery(u, query));
+  if(!lawyers.length){
+    box.innerHTML = `<p class="admin-empty-msg">${escapeHtml(query ? (currentLang === 'ar' ? 'لا توجد نتائج.' : 'No matching lawyers.') : t('adminNoLawyers'))}</p>`;
+    return;
+  }
+  const header = `<div class="admin-table admin-table--lawyers"><div class="admin-table-head"><div>${currentLang === 'ar' ? 'المحامي' : 'Lawyer'}</div><div>${escapeHtml(t('adminApprovalStatus'))}</div><div>${escapeHtml(t('adminAccountStatus'))}</div><div>${escapeHtml(t('adminJoined'))}</div><div>${currentLang === 'ar' ? 'إجراءات' : 'Actions'}</div></div>`;
+  box.innerHTML = header + lawyers.map(u=>{
+    const st = String(u.lawyerStatus || '').toLowerCase() || '—';
+    const statusLabel = st === 'approved' ? (currentLang === 'ar' ? 'معتمد' : 'Approved') : (st === 'pending' ? t('statusPending') : (st === 'rejected' ? (currentLang === 'ar' ? 'مرفوض' : 'Rejected') : st));
+    const rowClass = `admin-table-row${st === 'pending' ? ' admin-table-row--pending' : ''}${u.deletedAt ? ' admin-table-row--deleted' : ''}`;
+    const accountLabel = u.isActive !== false ? (currentLang === 'ar' ? 'نشط' : 'Active') : (currentLang === 'ar' ? 'موقوف' : 'Suspended');
+    return `<div class="${rowClass}"><div>${adminAccountCell(u)}${u.deletedAt ? ` <span class="admin-pill admin-pill--danger">${escapeHtml(currentLang === 'ar' ? 'محذوف' : 'Deleted')}</span>` : ''}</div><div>${adminStatusPill(statusLabel, adminLawyerStatusTone(st))}</div><div>${adminStatusPill(accountLabel, adminAccountTone(u.isActive))}</div><div class="dash-muted-text">${escapeHtml(adminFormatJoined(u.createdAt))}</div><div>${u.deletedAt ? '' : adminLawyerActions(u)}</div></div>`;
+  }).join('') + '</div>';
+}
+
+function renderAdminClients(res, query){
+  const box = document.getElementById('adminClientsTable');
+  if(!box) return;
+  if(!res.ok){ box.innerHTML = `<p class="admin-empty-msg" style="color:#991b1b">${escapeHtml(res.error || 'Failed')}</p>`; return; }
+  const clients = (Array.isArray(res.users) ? res.users : []).filter(isAdminClientAccount).filter(u=>adminUserMatchesQuery(u, query));
+  if(!clients.length){
+    box.innerHTML = `<p class="admin-empty-msg">${escapeHtml(query ? (currentLang === 'ar' ? 'لا توجد نتائج.' : 'No matching clients.') : t('adminNoClients'))}</p>`;
+    return;
+  }
+  const header = `<div class="admin-table admin-table--clients"><div class="admin-table-head"><div>${currentLang === 'ar' ? 'العميل' : 'Client'}</div><div>${escapeHtml(t('adminAccountStatus'))}</div><div>${escapeHtml(t('adminJoined'))}</div><div>${currentLang === 'ar' ? 'إجراءات' : 'Actions'}</div></div>`;
+  box.innerHTML = header + clients.map(u=>{
+    const rowClass = `admin-table-row${u.deletedAt ? ' admin-table-row--deleted' : ''}`;
+    const accountLabel = u.isActive !== false ? (currentLang === 'ar' ? 'نشط' : 'Active') : (currentLang === 'ar' ? 'موقوف' : 'Suspended');
+    return `<div class="${rowClass}"><div>${adminAccountCell(u)}${u.deletedAt ? ` <span class="admin-pill admin-pill--danger">${escapeHtml(currentLang === 'ar' ? 'محذوف' : 'Deleted')}</span>` : ''}</div><div>${adminStatusPill(accountLabel, adminAccountTone(u.isActive))}</div><div class="dash-muted-text">${escapeHtml(adminFormatJoined(u.createdAt))}</div><div>${u.deletedAt ? '' : adminClientActions(u)}</div></div>`;
+  }).join('') + '</div>';
 }
 
 function renderAdminActions(res){
   const box = document.getElementById('adminActionsLog');
   if(!box) return;
-  if(!res.ok){ box.innerText = res.error || 'Failed'; return; }
+  if(!res.ok){ box.innerHTML = `<p class="admin-empty-msg" style="color:#991b1b">${escapeHtml(res.error || 'Failed')}</p>`; return; }
   const actions = Array.isArray(res.actions) ? res.actions : [];
-  if(!actions.length){ box.innerText = 'No actions yet.'; return; }
-  box.innerHTML = actions.slice(0, 80).map(a=>`<div style="padding:6px 0;border-bottom:1px solid #E4D9CC"><strong>${escapeHtml(a.action || '')}</strong> — ${escapeHtml(a.targetEmail || '')} <span style="color:#6B5E50">by ${escapeHtml(a.adminEmail || '')} at ${escapeHtml(a.at || '')}</span></div>`).join('');
+  if(!actions.length){ box.innerHTML = `<p class="admin-empty-msg">${escapeHtml(t('adminNoActions'))}</p>`; return; }
+  box.innerHTML = actions.slice(0, 80).map(a=>`<div class="admin-action-item"><span class="admin-action-type">${escapeHtml(a.action || '')}</span><span class="admin-action-target">${escapeHtml(a.targetEmail || '')}</span><span class="admin-action-meta">${escapeHtml(currentLang === 'ar' ? 'بواسطة' : 'by')} ${escapeHtml(a.adminEmail || '')} · ${escapeHtml(a.at || '')}</span></div>`).join('');
 }
 
 function renderAdminContacts(data){
   const box = document.getElementById('adminContactsTable');
   if(!box) return;
   const list = (data && data.ok && Array.isArray(data.contacts)) ? data.contacts : [];
-  const unread = list.filter(c => !c.isRead).length;
-  const badge = document.getElementById('adminContactsUnreadBadge');
-  if(badge){
-    if(unread > 0){
-      badge.textContent = String(unread);
-      badge.classList.remove('hidden');
-    } else {
-      badge.classList.add('hidden');
-    }
-  }
   if(!list.length){
-    box.innerHTML = `<p style="color:#6B5E50;margin:0">${escapeHtml(t('adminContactsEmpty'))}</p>`;
+    box.innerHTML = `<p class="admin-empty-msg">${escapeHtml(t('adminContactsEmpty'))}</p>`;
     return;
   }
-  const header = `<div style="display:grid;grid-template-columns:1.2fr 1.2fr 2fr 1fr auto;gap:8px;font-weight:700;padding:8px 0;border-bottom:2px solid #E4D9CC;color:#6B5E50;font-size:12px"><div>${currentLang === 'ar' ? 'الاسم' : 'Name'}</div><div>${currentLang === 'ar' ? 'البريد' : 'Email'}</div><div>${currentLang === 'ar' ? 'الرسالة' : 'Message'}</div><div>${currentLang === 'ar' ? 'التاريخ' : 'Date'}</div><div>${currentLang === 'ar' ? 'الحالة' : 'Status'}</div></div>`;
+  const header = `<div class="admin-table admin-table--contacts"><div class="admin-table-head"><div>${currentLang === 'ar' ? 'الاسم' : 'Name'}</div><div>${currentLang === 'ar' ? 'البريد' : 'Email'}</div><div>${currentLang === 'ar' ? 'الرسالة' : 'Message'}</div><div>${currentLang === 'ar' ? 'التاريخ' : 'Date'}</div><div>${currentLang === 'ar' ? 'الحالة' : 'Status'}</div></div>`;
   box.innerHTML = header + list.map(c => {
     const dateLabel = c.createdAt ? new Date(c.createdAt).toLocaleString(currentLang === 'ar' ? 'ar-EG' : undefined) : '';
     const status = c.isRead ? t('adminRead') : t('adminUnread');
-    const rowBg = c.isRead ? '' : 'background:#FFF8EE;';
+    const rowClass = `admin-table-row${c.isRead ? '' : ' admin-table-row--unread'}`;
     const msg = escapeHtml(c.message || '').replace(/\n/g, '<br>');
-    const markBtn = c.isRead ? '' : `<button type="button" onclick="markAdminContactRead(${Number(c.id)})">${escapeHtml(t('adminMarkRead'))}</button>`;
-    return `<div style="display:grid;grid-template-columns:1.2fr 1.2fr 2fr 1fr auto;gap:8px;align-items:start;border-bottom:1px solid #E4D9CC;padding:10px 0;${rowBg}"><div>${escapeHtml(c.name || '')}</div><div><a href="mailto:${escapeHtml(c.email || '')}">${escapeHtml(c.email || '')}</a></div><div style="font-size:13px;line-height:1.5">${msg}</div><div style="font-size:12px;color:#6B5E50">${escapeHtml(dateLabel)}</div><div style="font-size:12px">${escapeHtml(status)} ${markBtn}</div></div>`;
-  }).join('');
+    const statusClass = c.isRead ? 'admin-pill admin-pill--neutral' : 'admin-pill admin-pill--warning';
+    const markBtn = c.isRead ? '' : `<button type="button" class="admin-btn-sm admin-btn-muted" onclick="markAdminContactRead(${Number(c.id)})">${escapeHtml(t('adminMarkRead'))}</button>`;
+    return `<div class="${rowClass}"><div>${escapeHtml(c.name || '')}</div><div><a href="mailto:${escapeHtml(c.email || '')}">${escapeHtml(c.email || '')}</a></div><div class="admin-contact-msg">${msg}</div><div class="dash-muted-text" style="font-size:12px">${escapeHtml(dateLabel)}</div><div><span class="${statusClass}">${escapeHtml(status)}</span> ${markBtn}</div></div>`;
+  }).join('') + '</div>';
 }
 
 function markAdminContactRead(id){

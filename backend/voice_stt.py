@@ -50,6 +50,52 @@ def _suffix_for_mime(mime: str) -> str:
     return ".webm"
 
 
+def _normalize_browser_audio(src_path: str) -> tuple[str, bool]:
+    """
+    Convert browser webm/opus to 16 kHz mono WAV — Whisper is much more accurate on this.
+    Returns (path_to_use, is_temp_normalized).
+    """
+    if src_path.lower().endswith(".wav"):
+        return src_path, False
+    try:
+        import av
+    except ImportError:
+        return src_path, False
+
+    dst_path = src_path.rsplit(".", 1)[0] + "_16k.wav"
+    try:
+        with av.open(src_path) as inp:
+            if not inp.streams.audio:
+                return src_path, False
+            with av.open(dst_path, "w", format="wav") as out:
+                out_stream = out.add_stream("pcm_s16le", rate=16000, layout="mono")
+                resampler = av.AudioResampler(format="s16", layout="mono", rate=16000)
+                for frame in inp.decode(audio=0):
+                    for resampled in resampler.resample(frame):
+                        for packet in out_stream.encode(resampled):
+                            out.mux(packet)
+                for packet in out_stream.encode(None):
+                    out.mux(packet)
+        if Path(dst_path).stat().st_size > 500:
+            return dst_path, True
+    except Exception as exc:
+        print(f"[voice] audio normalize skipped: {exc}")
+    try:
+        Path(dst_path).unlink(missing_ok=True)
+    except OSError:
+        pass
+    return src_path, False
+
+
+def _warn_if_weak_model(model_name: str) -> None:
+    weak = str(model_name or "").lower()
+    if weak in ("tiny", "tiny.en", "base", "base.en"):
+        print(
+            f"[voice] WARNING: WHISPER_MODEL={model_name} is too small for Egyptian Arabic. "
+            "Set WHISPER_MODEL=medium in backend/.env and restart the RAG API."
+        )
+
+
 def _get_whisper_model():
     global _whisper_model, _whisper_error, _whisper_loading
     if _whisper_model is not None:
@@ -71,6 +117,7 @@ def _get_whisper_model():
         cfg = voice_stt_config()
         _whisper_loading = True
         try:
+            _warn_if_weak_model(cfg["model"])
             print(f"[voice] Loading Whisper model ({cfg['model']})…")
             _whisper_model = WhisperModel(
                 cfg["model"],
@@ -121,8 +168,8 @@ def transcribe_audio_bytes(
     Transcribe audio and normalize Egyptian dialect for RAG/chat.
     Returns original transcript (for UI) plus normalized forms.
     """
-    if not data or len(data) < 200:
-        raise ValueError("Audio too short or empty")
+    if not data or len(data) < 800:
+        raise ValueError("Audio too short — speak for at least 2 seconds")
     if len(data) > 12 * 1024 * 1024:
         raise ValueError("Audio too large (max ~12MB)")
 
@@ -136,29 +183,40 @@ def transcribe_audio_bytes(
     lang_code = "ar" if str(lang or "").lower().startswith("ar") else (lang or "ar")
 
     tmp_path: Optional[str] = None
+    norm_path: Optional[str] = None
     try:
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             tmp.write(data)
             tmp_path = tmp.name
 
+        audio_path, normalized = _normalize_browser_audio(tmp_path)
+        if normalized:
+            norm_path = audio_path
+
         segments, _info = model.transcribe(
-            tmp_path,
+            audio_path,
             language=lang_code,
+            task="transcribe",
             initial_prompt=_EGYPTIAN_WHISPER_PROMPT,
             vad_filter=True,
+            vad_parameters={"min_silence_duration_ms": 400, "threshold": 0.35},
             beam_size=5,
             best_of=5,
+            patience=1.0,
             temperature=0.0,
             condition_on_previous_text=False,
-            no_speech_threshold=0.5,
+            compression_ratio_threshold=2.4,
+            log_prob_threshold=-1.0,
+            no_speech_threshold=0.45,
         )
         raw = "".join(seg.text for seg in segments).strip()
     finally:
-        if tmp_path:
-            try:
-                Path(tmp_path).unlink(missing_ok=True)
-            except OSError:
-                pass
+        for p in (norm_path, tmp_path):
+            if p:
+                try:
+                    Path(p).unlink(missing_ok=True)
+                except OSError:
+                    pass
 
     if not raw:
         raise ValueError("No speech detected")

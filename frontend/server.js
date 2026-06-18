@@ -51,18 +51,13 @@ function slotAllowed(date, time, allowedSlots){
 }
 
 function saveState(){
-  try{
-    db.saveAllState({ users, bookings, adminActions, aiConversations, lawyerReviews });
-    return true;
-  } catch(e){
-    console.error('saveState', e);
-    return false;
-  }
+  db.saveAllState({ users, bookings, adminActions, aiConversations, lawyerReviews })
+    .catch((e) => console.error('saveState', e));
 }
 
-function loadState(){
+async function loadState(){
   try{
-    const data = db.loadAllState();
+    const data = await db.loadAllState();
     if(Array.isArray(data.users) && data.users.length){
       users.splice(0, users.length, ...data.users);
     }
@@ -445,40 +440,47 @@ users.push(
   }
 );
 
-db.initDatabase();
-const migration = db.migrateFromJsonIfNeeded(DATA_FILE);
-if(migration.migrated){
-  console.log('[db] Imported', migration.users || 0, 'users from legalguide-data.json');
-}
-loadState();
-let lawyerProfileFieldsPersisted = false;
-users.forEach(u=>{
-  if(typeof u.isActive !== 'boolean') u.isActive = true;
-  if(typeof u.deletedAt === 'undefined') u.deletedAt = null;
-  if(!u.lawyerStatus){
-    u.lawyerStatus = (String(u.role || '').toLowerCase().startsWith('law') ? 'pending' : 'approved');
+async function bootstrapApp() {
+  try {
+    await db.initDatabase();
+    const migration = await db.migrateFromJsonIfNeeded(DATA_FILE);
+    if (migration.migrated) {
+      console.log('[db] Imported', migration.users || 0, 'users from legalguide-data.json');
+    }
+    await loadState();
+    let lawyerProfileFieldsPersisted = false;
+    users.forEach((u) => {
+      if (typeof u.isActive !== 'boolean') u.isActive = true;
+      if (typeof u.deletedAt === 'undefined') u.deletedAt = null;
+      if (!u.lawyerStatus) {
+        u.lawyerStatus = String(u.role || '').toLowerCase().startsWith('law') ? 'pending' : 'approved';
+      }
+      if (!Array.isArray(u.documents)) u.documents = [];
+      if (typeof u.gender === 'undefined') u.gender = '';
+      if (typeof u.consultationFee === 'undefined') u.consultationFee = null;
+      if (typeof u.feeMin === 'undefined') u.feeMin = lawyerFeeMin(u);
+      if (typeof u.feeMax === 'undefined') u.feeMax = null;
+      if (typeof u.practiceDetails === 'undefined') u.practiceDetails = '';
+      if (typeof u.phone === 'undefined') u.phone = '';
+      if ((u.role || '').toLowerCase().startsWith('law') && !u.specialty) {
+        u.specialty = 'General Personal Status';
+      }
+      if ((u.role || '').toLowerCase().startsWith('law')) {
+        if (typeof u.location !== 'string') { u.location = ''; lawyerProfileFieldsPersisted = true; }
+        if (typeof u.yearsOfExperience === 'undefined') { u.yearsOfExperience = null; lawyerProfileFieldsPersisted = true; }
+        if (typeof u.consultationDuration === 'undefined') { u.consultationDuration = null; lawyerProfileFieldsPersisted = true; }
+        if (!Array.isArray(u.bookingOptions)) { u.bookingOptions = []; lawyerProfileFieldsPersisted = true; }
+      }
+    });
+    if (lawyerProfileFieldsPersisted) saveState();
+    if ((await db.isDbEmpty()) && users.length) {
+      saveState();
+      console.log('[db] Seeded default users into MySQL at', db.getDbPath());
+    }
+  } catch (e) {
+    console.error('[db] MySQL initialization failed:', e.message || e);
+    process.exit(1);
   }
-  if(!Array.isArray(u.documents)) u.documents = [];
-  if(typeof u.gender === 'undefined') u.gender = '';
-  if(typeof u.consultationFee === 'undefined') u.consultationFee = null;
-  if(typeof u.feeMin === 'undefined') u.feeMin = lawyerFeeMin(u);
-  if(typeof u.feeMax === 'undefined') u.feeMax = null;
-  if(typeof u.practiceDetails === 'undefined') u.practiceDetails = '';
-  if(typeof u.phone === 'undefined') u.phone = '';
-  if((u.role || '').toLowerCase().startsWith('law') && !u.specialty){
-    u.specialty = 'General Personal Status';
-  }
-  if((u.role || '').toLowerCase().startsWith('law')){
-    if(typeof u.location !== 'string'){ u.location = ''; lawyerProfileFieldsPersisted = true; }
-    if(typeof u.yearsOfExperience === 'undefined'){ u.yearsOfExperience = null; lawyerProfileFieldsPersisted = true; }
-    if(typeof u.consultationDuration === 'undefined'){ u.consultationDuration = null; lawyerProfileFieldsPersisted = true; }
-    if(!Array.isArray(u.bookingOptions)){ u.bookingOptions = []; lawyerProfileFieldsPersisted = true; }
-  }
-});
-if(lawyerProfileFieldsPersisted) saveState();
-if(db.isDbEmpty() && users.length){
-  saveState();
-  console.log('[db] Seeded default users into SQLite at', db.getDbPath());
 }
 
 async function askRagBackend(message, history) {
@@ -825,15 +827,15 @@ app.get('/api/health', async (req, res) => {
   } catch (_e) {
     ragOk = false;
   }
-  res.json({ ok: true, rag: ragOk, ragUrl: RAG_API_URL, profileFieldsVersion: 2, database: 'sqlite', dbPath: db.getDbPath() });
+  res.json({ ok: true, rag: ragOk, ragUrl: RAG_API_URL, profileFieldsVersion: 2, database: 'mysql', dbPath: db.getDbPath() });
 });
 
-// Contact form (persisted in SQLite)
-app.post('/api/contact', (req, res) => {
+// Contact form (persisted in MySQL)
+app.post('/api/contact', async (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) return res.json({ ok: false, error: 'Missing fields' });
   try {
-    const row = db.insertContact({ name, email, message });
+    const row = await db.insertContact({ name, email, message });
     console.log('Contact received', { id: row.id, email: row.email });
     res.json({ ok: true });
   } catch (e) {
@@ -1557,10 +1559,10 @@ app.get('/api/admin/actions', verifyToken, requireAdmin, (_req, res) => {
   res.json({ ok: true, actions: adminActions.slice().reverse().slice(0, 200) });
 });
 
-app.get('/api/admin/contacts', verifyToken, requireAdmin, (req, res) => {
+app.get('/api/admin/contacts', verifyToken, requireAdmin, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 200;
-    const contacts = db.listContacts({ limit });
+    const contacts = await db.listContacts({ limit });
     res.json({ ok: true, contacts });
   } catch (e) {
     console.error('GET /api/admin/contacts', e);
@@ -1568,9 +1570,9 @@ app.get('/api/admin/contacts', verifyToken, requireAdmin, (req, res) => {
   }
 });
 
-app.patch('/api/admin/contacts/:id/read', verifyToken, requireAdmin, (req, res) => {
+app.patch('/api/admin/contacts/:id/read', verifyToken, requireAdmin, async (req, res) => {
   try {
-    const ok = db.markContactRead(req.params.id);
+    const ok = await db.markContactRead(req.params.id);
     if (!ok) return res.status(404).json({ ok: false, error: 'Contact not found' });
     res.json({ ok: true });
   } catch (e) {
@@ -1582,8 +1584,10 @@ app.patch('/api/admin/contacts/:id/read', verifyToken, requireAdmin, (req, res) 
 // Static files last so /api/* routes are never shadowed
 app.use(express.static(path.join(__dirname)));
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`SQLite database: ${db.getDbPath()}`);
-  console.log(`Lawyer profile fields API version: 2 (location, experience, booking options)`);
+bootstrapApp().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`MySQL database: ${db.getDbPath()}`);
+    console.log(`Lawyer profile fields API version: 2 (location, experience, booking options)`);
+  });
 });

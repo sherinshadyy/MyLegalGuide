@@ -7,48 +7,197 @@
   <link rel="stylesheet" href="styles.css"/>
   <link rel="stylesheet" href="fabulous.css"/>
   <link rel="stylesheet" href="lawyers.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
 </head>
-<body data-page="admin" data-title-key="adminTitle">
-  <nav class="navbar glass">
-    <div class="logo">⚖ LegalGuide Admin</div>
-    <div class="nav-links">
-      <a href="index.html" data-key="siteHome">Site home</a>
-      <a id="navDashboardLink" href="admin.html" data-key="dashboard">Dashboard</a>
-      <button type="button" onclick="logout()" data-i18n="logout">Logout</button>
+<body class="dash-layout admin-layout" data-page="admin" data-dash="admin" data-title-key="adminTitle">
+
+<aside class="sidebar dash-sidebar admin-sidebar">
+  <div class="dash-sidebar-brand admin-sidebar-brand">
+    <span class="admin-brand-icon" aria-hidden="true">⚖</span>
+    <span>LegalGuide</span>
+    <small>Admin</small>
+  </div>
+
+  <div class="dash-sidebar-group" data-i18n="adminNavOverview">Overview</div>
+  <button type="button" id="adminOverviewNavBtn" class="sidebar-nav-btn active" onclick="showSection('adminOverview')">
+    <i data-lucide="layout-dashboard"></i>
+    <span data-i18n="adminOverview">Dashboard</span>
+  </button>
+
+  <div class="dash-sidebar-group" data-i18n="adminNavReview">Review</div>
+  <button type="button" id="adminPendingNavBtn" class="sidebar-nav-btn" onclick="showSection('adminPending')">
+    <i data-lucide="clipboard-check"></i>
+    <span data-i18n="pendingApprovals">Pending approvals</span>
+    <span id="adminPendingBadge" class="admin-nav-badge hidden">0</span>
+  </button>
+
+  <div class="dash-sidebar-group" data-i18n="adminNavAccounts">Accounts</div>
+  <button type="button" id="adminLawyersNavBtn" class="sidebar-nav-btn" onclick="showSection('adminLawyers')">
+    <i data-lucide="scale"></i>
+    <span data-i18n="adminLawyersTitle">Lawyers</span>
+    <span id="adminLawyersCountBadge" class="admin-nav-badge admin-nav-badge--muted hidden">0</span>
+  </button>
+  <button type="button" id="adminClientsNavBtn" class="sidebar-nav-btn" onclick="showSection('adminClients')">
+    <i data-lucide="users"></i>
+    <span data-i18n="adminClientsTitle">Clients</span>
+    <span id="adminClientsCountBadge" class="admin-nav-badge admin-nav-badge--muted hidden">0</span>
+  </button>
+
+  <div class="dash-sidebar-group" data-i18n="adminNavCommunication">Communication</div>
+  <button type="button" id="adminContactsNavBtn" class="sidebar-nav-btn" onclick="showSection('adminContacts')">
+    <i data-lucide="mail"></i>
+    <span data-i18n="adminContactsTitle">Contact messages</span>
+    <span id="adminContactsUnreadBadge" class="admin-nav-badge hidden">0</span>
+  </button>
+
+  <div class="dash-sidebar-group" data-i18n="adminNavSystem">System</div>
+  <button type="button" id="adminActionsNavBtn" class="sidebar-nav-btn" onclick="showSection('adminActions')">
+    <i data-lucide="history"></i>
+    <span data-i18n="recentActions">Activity log</span>
+  </button>
+
+  <div class="sidebar-spacer"></div>
+  <button type="button" class="sidebar-nav-btn" onclick="window.location.href='index.html'">
+    <i data-lucide="globe"></i>
+    <span data-i18n="siteHome">Site home</span>
+  </button>
+  <button type="button" class="sidebar-nav-btn logout-btn" onclick="logout()">
+    <i data-lucide="log-out"></i>
+    <span data-i18n="navLogout">Logout</span>
+  </button>
+</aside>
+
+<main class="dash-content dash-content--wide admin-main">
+  <header class="dash-content-header admin-header">
+    <div class="dash-content-header-text">
+      <p class="admin-eyebrow" data-i18n="adminNavGroup">Administration</p>
+      <h1 id="adminPageTitle" class="dash-page-title">Dashboard</h1>
+      <p id="adminPageSub" class="dash-page-sub">Platform overview and quick access to every admin task.</p>
     </div>
-  </nav>
-
-  <section class="container" style="padding-top:110px">
-    <h2 class="title" data-i18n="adminTitle">Admin Control Center</h2>
-    <p style="color:#6B5E50;margin:-8px 0 20px" data-i18n="adminSub">Review lawyers who saved their profile or price range and are waiting to go live on the public lawyers page.</p>
-
-    <div class="card" style="border:2px solid #E8DFD0">
-      <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap" data-i18n="pendingApprovals">
-        Pending lawyer approvals
-        <span id="adminPendingBadge" class="hidden" style="background:#9A7B4F;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700">0</span>
-      </h3>
-      <div id="adminPendingLawyers">Loading...</div>
+    <div class="dash-topbar-actions" role="toolbar" aria-label="Language and theme">
+      <button type="button" class="dash-icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+      <button type="button" class="dash-icon-btn" onclick="toggleLang()" aria-label="Toggle language" title="Toggle language">🌐</button>
     </div>
+  </header>
 
-    <div class="card">
-      <h3>Users & Lawyers</h3>
-      <div id="adminUsersTable">Loading...</div>
+  <div class="admin-stats-grid" aria-label="Overview">
+    <div class="admin-stat-card admin-stat-card--pending">
+      <div class="admin-stat-icon" aria-hidden="true"><i data-lucide="clipboard-check"></i></div>
+      <div class="admin-stat-body">
+        <span class="admin-stat-label" data-i18n="adminStatPending">Pending approvals</span>
+        <strong id="adminStatPending" class="admin-stat-value">—</strong>
+      </div>
     </div>
-
-    <div class="card">
-      <h3>Recent Admin Actions</h3>
-      <div id="adminActionsLog">Loading...</div>
+    <div class="admin-stat-card admin-stat-card--lawyers">
+      <div class="admin-stat-icon" aria-hidden="true"><i data-lucide="scale"></i></div>
+      <div class="admin-stat-body">
+        <span class="admin-stat-label" data-i18n="adminStatLawyers">Registered lawyers</span>
+        <strong id="adminStatLawyers" class="admin-stat-value">—</strong>
+      </div>
     </div>
-
-    <div class="card">
-      <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        Contact form messages
-        <span id="adminContactsUnreadBadge" class="hidden" style="background:#9A7B4F;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700">0</span>
-      </h3>
-      <div id="adminContactsTable">Loading...</div>
+    <div class="admin-stat-card admin-stat-card--clients">
+      <div class="admin-stat-icon" aria-hidden="true"><i data-lucide="users"></i></div>
+      <div class="admin-stat-body">
+        <span class="admin-stat-label" data-i18n="adminStatClients">Client accounts</span>
+        <strong id="adminStatClients" class="admin-stat-value">—</strong>
+      </div>
     </div>
-  </section>
+    <div class="admin-stat-card admin-stat-card--messages">
+      <div class="admin-stat-icon" aria-hidden="true"><i data-lucide="mail"></i></div>
+      <div class="admin-stat-body">
+        <span class="admin-stat-label" data-i18n="adminStatUnread">Unread messages</span>
+        <strong id="adminStatUnread" class="admin-stat-value">—</strong>
+      </div>
+    </div>
+  </div>
 
-  <script src="script.js"></script>
+  <div id="adminOverview" class="dash-box admin-section">
+    <h2 data-i18n="adminQuickAccess">Quick access</h2>
+    <p class="admin-section-desc" data-i18n="adminOverviewDesc">Platform overview and quick access to every admin task.</p>
+    <div class="admin-quick-grid">
+      <button type="button" class="admin-quick-card" onclick="showSection('adminPending')">
+        <span class="admin-quick-icon admin-quick-icon--pending"><i data-lucide="clipboard-check"></i></span>
+        <span class="admin-quick-label" data-i18n="pendingApprovals">Pending approvals</span>
+        <strong id="adminQuickPending" class="admin-quick-value">0</strong>
+      </button>
+      <button type="button" class="admin-quick-card" onclick="showSection('adminLawyers')">
+        <span class="admin-quick-icon admin-quick-icon--lawyers"><i data-lucide="scale"></i></span>
+        <span class="admin-quick-label" data-i18n="adminLawyersTitle">Lawyers</span>
+        <strong id="adminQuickLawyers" class="admin-quick-value">0</strong>
+      </button>
+      <button type="button" class="admin-quick-card" onclick="showSection('adminClients')">
+        <span class="admin-quick-icon admin-quick-icon--clients"><i data-lucide="users"></i></span>
+        <span class="admin-quick-label" data-i18n="adminClientsTitle">Clients</span>
+        <strong id="adminQuickClients" class="admin-quick-value">0</strong>
+      </button>
+      <button type="button" class="admin-quick-card" onclick="showSection('adminContacts')">
+        <span class="admin-quick-icon admin-quick-icon--messages"><i data-lucide="mail"></i></span>
+        <span class="admin-quick-label" data-i18n="adminContactsTitle">Contact messages</span>
+        <strong id="adminQuickUnread" class="admin-quick-value">0</strong>
+      </button>
+    </div>
+    <div id="adminOverviewRecent" class="admin-overview-recent"></div>
+  </div>
+
+  <div id="adminPending" class="dash-box admin-section hidden">
+    <div class="admin-section-head">
+      <div>
+        <h2 data-i18n="pendingApprovals">Pending lawyer approvals</h2>
+        <p class="admin-section-desc" data-i18n="adminPendingDesc">Review new lawyer profiles and approve or reject them before they appear publicly.</p>
+      </div>
+    </div>
+    <div id="adminPendingLawyers" class="admin-panel-body">Loading...</div>
+  </div>
+
+  <div id="adminLawyers" class="dash-box admin-section hidden">
+    <div class="admin-section-head">
+      <div>
+        <h2 data-i18n="adminLawyersTitle">Lawyers</h2>
+        <p class="admin-section-desc" data-i18n="adminLawyersDesc">All lawyer accounts — approval status, suspension, and profile management.</p>
+      </div>
+      <div class="admin-toolbar">
+        <input type="search" id="adminLawyersSearch" class="admin-search" data-placeholder-key="adminSearchLawyers" placeholder="Search lawyers by name or email…" oninput="filterAdminLawyers(this.value)">
+      </div>
+    </div>
+    <div id="adminLawyersTable" class="admin-panel-body admin-table-wrap">Loading...</div>
+  </div>
+
+  <div id="adminClients" class="dash-box admin-section hidden">
+    <div class="admin-section-head">
+      <div>
+        <h2 data-i18n="adminClientsTitle">Clients</h2>
+        <p class="admin-section-desc" data-i18n="adminClientsDesc">Client accounts only — separate from lawyer profiles.</p>
+      </div>
+      <div class="admin-toolbar">
+        <input type="search" id="adminClientsSearch" class="admin-search" data-placeholder-key="adminSearchClients" placeholder="Search clients by name or email…" oninput="filterAdminClients(this.value)">
+      </div>
+    </div>
+    <div id="adminClientsTable" class="admin-panel-body admin-table-wrap">Loading...</div>
+  </div>
+
+  <div id="adminContacts" class="dash-box admin-section hidden">
+    <div class="admin-section-head">
+      <div>
+        <h2 data-i18n="adminContactsTitle">Contact form messages</h2>
+        <p class="admin-section-desc" data-i18n="adminContactsDesc">Messages sent through the site contact form.</p>
+      </div>
+    </div>
+    <div id="adminContactsTable" class="admin-panel-body admin-table-wrap">Loading...</div>
+  </div>
+
+  <div id="adminActions" class="dash-box admin-section hidden">
+    <div class="admin-section-head">
+      <div>
+        <h2 data-i18n="recentActions">Activity log</h2>
+        <p class="admin-section-desc" data-i18n="adminActionsDesc">Audit trail of approvals, rejections, and account changes.</p>
+      </div>
+    </div>
+    <div id="adminActionsLog" class="admin-panel-body admin-action-log">Loading...</div>
+  </div>
+</main>
+
+<script src="script.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>if(window.lucide) lucide.createIcons();</script>
 </body>
 </html>

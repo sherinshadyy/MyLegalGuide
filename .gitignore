@@ -14,8 +14,6 @@ frontend/legalguide.db
 frontend/*.db
 frontend/*.db-wal
 frontend/*.db-shm
-
-# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/

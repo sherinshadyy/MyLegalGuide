@@ -134,6 +134,10 @@
   font-size:14px;
 }
 
+.dash-muted-text{
+  color:#6B5E50;
+}
+
 .dark .dash-icon-btn{
   background:#3D3428;
   color:#F5EFE6;
@@ -870,4 +874,586 @@
   background:#2A241C;
   border-color:#4A4035;
   color:#9A8B7A;
+}
+
+/* Admin dashboard */
+.dash-content--wide,
+.admin-main{
+  max-width:1180px;
+}
+
+.admin-layout{
+  background:linear-gradient(180deg, #FAF7F2 0%, #F3EDE4 100%);
+}
+
+.admin-sidebar-brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  line-height:1.2;
+}
+
+.admin-sidebar-brand small{
+  display:block;
+  width:100%;
+  margin-left:34px;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:rgba(245,239,230,.55);
+}
+
+.admin-brand-icon{
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  background:rgba(154,123,79,.28);
+  font-size:15px;
+}
+
+.dash-sidebar .sidebar-nav-btn i,
+.dash-sidebar .sidebar-nav-btn svg{
+  width:18px;
+  height:18px;
+  flex-shrink:0;
+}
+
+.admin-nav-badge{
+  margin-left:auto;
+  background:#dc2626;
+  color:#fff;
+  border-radius:999px;
+  padding:1px 8px;
+  font-size:11px;
+  font-weight:700;
+  min-width:18px;
+  text-align:center;
+}
+
+.admin-nav-badge--muted{
+  background:rgba(255,255,255,.16);
+  color:#F5EFE6;
+}
+
+.admin-header .admin-eyebrow{
+  margin:0 0 4px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#9A7B4F;
+}
+
+.admin-stats-grid{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:14px;
+  margin-bottom:22px;
+}
+
+.admin-stat-card{
+  background:#FFFCF7;
+  border:1px solid #E4D9CC;
+  border-radius:16px;
+  padding:16px 18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  box-shadow:0 10px 28px rgba(44,36,25,.05);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+
+.admin-stat-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 34px rgba(44,36,25,.08);
+}
+
+.admin-stat-icon{
+  width:46px;
+  height:46px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+
+.admin-stat-icon svg{
+  width:22px;
+  height:22px;
+}
+
+.admin-stat-card--pending .admin-stat-icon{ background:#FAF3E8; color:#9A7B4F; }
+.admin-stat-card--lawyers .admin-stat-icon{ background:#E8F0EA; color:#166534; }
+.admin-stat-card--clients .admin-stat-icon{ background:#E8EEF8; color:#1D4ED8; }
+.admin-stat-card--messages .admin-stat-icon{ background:#FCE8EC; color:#BE123C; }
+
+.admin-stat-body{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+
+.admin-stat-label{
+  font-size:11px;
+  font-weight:700;
+  color:#6B5E50;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.admin-stat-value{
+  font-size:1.85rem;
+  line-height:1;
+  color:#3D3428;
+  font-weight:800;
+}
+
+.admin-section-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:4px;
+}
+
+.admin-section-desc{
+  margin:0;
+  font-size:13px;
+  color:#6B5E50;
+}
+
+.admin-section h2{
+  margin:0 0 6px;
+}
+
+.admin-toolbar{
+  flex:1;
+  min-width:220px;
+  max-width:320px;
+}
+
+.admin-search{
+  width:100%;
+  margin:0;
+  padding:10px 14px 10px 38px;
+  border-radius:12px;
+  border:1px solid #D4C4B0;
+  background:#FFFCF7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236B5E50' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3-3'/%3E%3C/svg%3E") no-repeat 12px center;
+  font-size:14px;
+}
+
+.admin-search:focus{
+  outline:none;
+  border-color:#9A7B4F;
+  box-shadow:0 0 0 3px rgba(154,123,79,.15);
+}
+
+.admin-quick-grid{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:14px;
+  margin-top:8px;
+}
+
+.admin-quick-card{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:8px;
+  padding:18px;
+  border-radius:16px;
+  border:1px solid #E4D9CC;
+  background:#FAF7F2;
+  cursor:pointer;
+  text-align:left;
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.admin-quick-card:hover{
+  transform:translateY(-2px);
+  border-color:#C4A77D;
+  box-shadow:0 12px 28px rgba(44,36,25,.08);
+}
+
+.admin-quick-icon{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.admin-quick-icon svg{ width:20px; height:20px; }
+.admin-quick-icon--pending{ background:#FAF3E8; color:#9A7B4F; }
+.admin-quick-icon--lawyers{ background:#E8F0EA; color:#166534; }
+.admin-quick-icon--clients{ background:#E8EEF8; color:#1D4ED8; }
+.admin-quick-icon--messages{ background:#FCE8EC; color:#BE123C; }
+
+.admin-quick-label{
+  font-size:13px;
+  font-weight:600;
+  color:#6B5344;
+}
+
+.admin-quick-value{
+  font-size:1.6rem;
+  line-height:1;
+  color:#3D3428;
+}
+
+.admin-overview-recent{
+  margin-top:22px;
+  padding-top:18px;
+  border-top:1px solid #E4D9CC;
+}
+
+.admin-overview-recent-title{
+  margin:0 0 10px;
+  font-size:14px;
+  font-weight:700;
+  color:#6B5344;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.admin-panel-body{
+  margin-top:12px;
+}
+
+.admin-empty-msg{
+  color:#6B5E50;
+  margin:0;
+  font-size:14px;
+  padding:18px;
+  border-radius:12px;
+  background:#FAF7F2;
+  border:1px dashed #D4C4B0;
+  text-align:center;
+}
+
+.admin-pending-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.admin-pending-card{
+  border-left:4px solid #9A7B4F;
+}
+
+.admin-pending-meta{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+  gap:8px 16px;
+  margin-top:10px;
+  font-size:14px;
+  line-height:1.45;
+}
+
+.admin-pending-meta dt{
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:#6B5344;
+  margin:0 0 2px;
+}
+
+.admin-pending-meta dd{
+  margin:0;
+  color:#4A4035;
+}
+
+.admin-pending-summary,
+.admin-pending-practice{
+  margin-top:10px;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.admin-pending-docs{
+  margin-top:10px;
+  font-size:13px;
+}
+
+.admin-pending-actions{
+  margin-top:14px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.admin-btn-danger{
+  background:#fef2f2;
+  color:#991b1b;
+  border:1px solid #fecaca;
+}
+
+.admin-btn-danger:hover{
+  background:#fee2e2;
+}
+
+.admin-btn-sm{
+  font-size:12px;
+  padding:6px 10px;
+  border-radius:8px;
+}
+
+.admin-btn-muted{
+  background:#F3EDE4;
+  color:#4A4035;
+  border:1px solid #D4C4B0;
+}
+
+.admin-btn-approve{
+  background:#ECFDF3;
+  color:#166534;
+  border:1px solid #BBF7D0;
+}
+
+.admin-pill{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+
+.admin-pill--success{ background:#ECFDF3; color:#166534; }
+.admin-pill--warning{ background:#FAF3E8; color:#9A7B4F; }
+.admin-pill--danger{ background:#FEF2F2; color:#991B1B; }
+.admin-pill--neutral{ background:#F3EDE4; color:#6B5344; }
+
+.admin-account-cell{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+
+.admin-account-cell strong{
+  font-size:14px;
+  color:#3D3428;
+}
+
+.admin-account-cell span{
+  font-size:12px;
+  color:#6B5E50;
+  word-break:break-word;
+}
+
+.admin-table-wrap{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #E4D9CC;
+  border-radius:14px;
+  background:#FAF7F2;
+  padding:0 14px;
+}
+
+.admin-table{
+  min-width:680px;
+}
+
+.admin-table-head,
+.admin-table-row{
+  display:grid;
+  gap:12px;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid #E4D9CC;
+  font-size:13px;
+}
+
+.admin-table-head{
+  font-weight:700;
+  color:#6B5344;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  border-bottom-width:2px;
+}
+
+.admin-table-row:last-child{
+  border-bottom:none;
+}
+
+.admin-table--lawyers .admin-table-head,
+.admin-table--lawyers .admin-table-row{
+  grid-template-columns:1.8fr 1fr 1fr 1fr minmax(180px, auto);
+}
+
+.admin-table--clients .admin-table-head,
+.admin-table--clients .admin-table-row{
+  grid-template-columns:2fr 1fr 1fr minmax(140px, auto);
+}
+
+.admin-table--contacts .admin-table-head,
+.admin-table--contacts .admin-table-row{
+  grid-template-columns:1fr 1.2fr 2fr 1fr minmax(100px, auto);
+  align-items:start;
+}
+
+.admin-table-row--pending{
+  background:rgba(250,243,232,.65);
+}
+
+.admin-table-row--unread{
+  background:rgba(255,248,238,.85);
+}
+
+.admin-table-row--deleted{
+  opacity:.72;
+}
+
+.admin-table-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.admin-contact-msg{
+  font-size:13px;
+  line-height:1.5;
+  color:#4A4035;
+  max-width:100%;
+  word-break:break-word;
+}
+
+.admin-action-log{
+  display:flex;
+  flex-direction:column;
+  border:1px solid #E4D9CC;
+  border-radius:14px;
+  background:#FAF7F2;
+  padding:4px 16px;
+}
+
+.admin-action-item{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 10px;
+  align-items:baseline;
+  padding:12px 0;
+  border-bottom:1px solid #E4D9CC;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.admin-action-item:last-child{
+  border-bottom:none;
+}
+
+.admin-action-item--compact{
+  padding:10px 0;
+}
+
+.admin-action-type{
+  font-weight:700;
+  color:#3D3428;
+}
+
+.admin-action-target{
+  color:#4A4035;
+}
+
+.admin-action-meta{
+  color:#6B5E50;
+  font-size:12px;
+}
+
+.dark .admin-layout{
+  background:linear-gradient(180deg, #1C1814 0%, #14110E 100%);
+}
+
+.dark .admin-stat-card,
+.dark .admin-quick-card{
+  background:#2A241E;
+  border-color:rgba(196,167,125,.22);
+}
+
+.dark .admin-stat-value,
+.dark .admin-quick-value,
+.dark .admin-account-cell strong,
+.dark .admin-action-type{
+  color:#F5EFE6;
+}
+
+.dark .admin-stat-label,
+.dark .admin-section-desc,
+.dark .admin-empty-msg,
+.dark .admin-action-meta,
+.dark .admin-account-cell span{
+  color:#C4B5A0;
+}
+
+.dark .admin-search{
+  background-color:#242019;
+  border-color:rgba(196,167,125,.28);
+  color:#F0E8DC;
+}
+
+.dark .admin-table-wrap,
+.dark .admin-action-log,
+.dark .admin-empty-msg{
+  background:#242019;
+  border-color:rgba(196,167,125,.22);
+}
+
+.dark .admin-table-head,
+.dark .admin-table-row,
+.dark .admin-action-item,
+.dark .admin-overview-recent{
+  border-color:rgba(196,167,125,.18);
+}
+
+.dark .admin-table-row--pending{
+  background:rgba(154,123,79,.12);
+}
+
+.dark .admin-table-row--unread{
+  background:rgba(154,123,79,.08);
+}
+
+.dark .admin-btn-muted{
+  background:#3D3428;
+  color:#F0E8DC;
+  border-color:rgba(196,167,125,.28);
+}
+
+.dark .admin-btn-danger{
+  background:rgba(127,29,29,.25);
+  color:#fecaca;
+  border-color:rgba(248,113,113,.35);
+}
+
+@media (max-width:1024px){
+  .admin-stats-grid,
+  .admin-quick-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width:768px){
+  .admin-stats-grid,
+  .admin-quick-grid{
+    grid-template-columns:1fr;
+  }
+
+  .admin-toolbar{
+    max-width:none;
+    width:100%;
+  }
 }
