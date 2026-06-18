@@ -324,32 +324,6 @@
 
     async start(){
       await this.refreshServerStatus();
-
-      if(this.useServerRecording()){
-        if(!this.serverSttReady){
-          this.processing = true;
-          this.setUiState(false);
-          this.toast(this.t('voiceModelLoading', 'Loading Egyptian voice model — please wait…'));
-          const ready = await this.waitForServerReady(180000);
-          this.processing = false;
-          if(!ready){
-            this.setUiState(false);
-            this.toast(this.t('voiceModelNotReady', 'Voice model is still loading. Make sure the RAG API is running, wait about a minute, then try again.'));
-            return;
-          }
-        }
-        const weak = String(this.serverSttModel || '').toLowerCase();
-        if(weak === 'tiny' || weak === 'tiny.en' || weak === 'base'){
-          console.warn('[voice] Whisper model is too small for Egyptian Arabic:', this.serverSttModel);
-        }
-        return this.startServerCapture();
-      }
-
-      if(this.isArabic()){
-        this.toast(this.t('voiceServerRequired', 'Accurate Egyptian voice needs the RAG API running (backend/start-rag.ps1).'));
-        return;
-      }
-
       if(this.useServerStt()) return this.startServerCapture();
       return this.startBrowserCapture();
     },
