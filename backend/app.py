@@ -15,18 +15,30 @@ from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 
+import db
+
 # ------------------------------------------------------------
 # 1. Load persisted RAG store (cached)
 # ------------------------------------------------------------
 @st.cache_resource
 def load_rag_store():
-    store = Path("rag_store")
-    index = faiss.read_index(str(store / "index.faiss"))
-    with (store / "docstore.json").open("r", encoding="utf-8") as f:
-        docs = json.load(f)
-    with (store / "bm25.pkl").open("rb") as f:
+    db.init_db()
+    docs = db.load_docstore_from_db()
+    if docs:
+        print(f"[db] Loaded {len(docs)} docs from MySQL")
+    else:
+        store = Path(os.getenv("RAG_STORE", "rag_store"))
+        docstore_path = store / "docstore.json"
+        if not docstore_path.exists():
+            raise FileNotFoundError(f"Missing docstore.json in {store}")
+        with docstore_path.open("r", encoding="utf-8") as f:
+            docs = json.load(f)
+        db.sync_json_docstore_to_db(docstore_path)
+        print(f"[db] Imported {len(docs)} docs from file into MySQL")
+
+    index = faiss.read_index(str(Path(os.getenv("RAG_STORE", "rag_store")) / "index.faiss"))
+    with (Path(os.getenv("RAG_STORE", "rag_store")) / "bm25.pkl").open("rb") as f:
         bm25 = pickle.load(f)["bm25"]
-    # Use the SAME embedding model that built the index
     embed_model = SentenceTransformer("Omartificial-Intelligence-Space/mmbert-base-arabic-nli")
     return index, docs, bm25, embed_model
 
@@ -218,17 +230,15 @@ def main():
                     st.error(f"Groq API error: {e}")
 
                 if st.button("Save this answer"):
-                    import datetime
                     record = {
-                        "timestamp": datetime.datetime.now().isoformat(),
                         "query": query,
                         "answer": full_answer,
                         "chunks_used": [doc["id"] for doc in retrieved_chunks]
                     }
-                    with open("user_answers.jsonl", "a", encoding="utf-8") as f:
-                        f.write(json.dumps(record, ensure_ascii=False) + "\n")
-                    st.success("Answer saved.")
-
+                    if db.save_user_answer(record):
+                        st.success("Answer saved to MySQL.")
+                    else:
+                        st.error("Could not save answer to MySQL.")
     st.markdown("---")
     st.caption("Hybrid retrieval (FAISS + BM25) with RRF fusion. Generation via Groq API.")
 

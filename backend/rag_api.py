@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
+import db
 from rag_answer import SYSTEM_PROMPT, build_prompt, hybrid_retrieve_rrf_multi
 from arabic_query import prepare_user_question
 from legal_prompts import (
@@ -346,8 +347,20 @@ def _load_index() -> None:
 
     print("[rag] Loading FAISS index and docstore...")
     _faiss_index = faiss.read_index(str(STORE_DIR / "index.faiss"))
-    with (STORE_DIR / "docstore.json").open("r", encoding="utf-8") as f:
-        _docs[:] = json.load(f)
+    try:
+        db.init_db()
+        _docs[:] = db.load_docstore_from_db()
+        if not _docs:
+            raise ValueError("empty mysql docstore")
+        print(f"[db] Loaded {_docs.__len__()} docs from MySQL")
+    except Exception:
+        with (STORE_DIR / "docstore.json").open("r", encoding="utf-8") as f:
+            _docs[:] = json.load(f)
+        try:
+            db.sync_json_docstore_to_db(STORE_DIR / "docstore.json")
+            print(f"[db] Synced {_docs.__len__()} docs from JSON to MySQL")
+        except Exception as db_err:
+            print(f"[db] Could not sync docstore to MySQL: {db_err}")
 
     bm25_path = STORE_DIR / "bm25.pkl"
     if not bm25_path.exists():
