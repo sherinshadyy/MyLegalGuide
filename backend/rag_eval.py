@@ -99,18 +99,23 @@ def rerank_docs(query: str, doc_indices: List[int], docs, reranker, top_k: int) 
 def recall_at_k(retrieved_idxs, docs, gold_chunk_ids=None):
     if not gold_chunk_ids:
         return None
-    denom = len(gold_chunk_ids)
-    ret_chunk_ids = [docs[i].get("id") for i in retrieved_idxs]
-    hits = len(set(ret_chunk_ids).intersection(set(gold_chunk_ids)))
-    return hits / denom if denom else None
+
+    retrieved_chunk_ids = [str(docs[i].get("id")) for i in retrieved_idxs]
+    gold_set = set(str(x) for x in gold_chunk_ids)
+
+    hits = len(set(retrieved_chunk_ids).intersection(gold_set))
+    return hits / len(gold_set)
 
 def mrr(retrieved_idxs, docs, gold_chunk_ids=None):
     if not gold_chunk_ids:
         return None
-    gold_set = set(gold_chunk_ids)
-    for rank, i in enumerate(retrieved_idxs, start=1):
-        if docs[i].get("id") in gold_set:
+
+    gold_set = set(str(x) for x in gold_chunk_ids)
+
+    for rank, idx in enumerate(retrieved_idxs, start=1):
+        if str(docs[idx].get("id")) in gold_set:
             return 1.0 / rank
+
     return 0.0
 
 def simple_f1(pred: str, gold: str) -> float:
@@ -213,11 +218,12 @@ def main():
         else:
             retrieved_indices = retrieved_indices[:args.k]
 
+
         # Compute retrieval metrics
-        rec = recall_at_k(retrieved_indices, docs, r.get("gold_source_ids"), r.get("gold_chunk_ids"))
+        rec = recall_at_k(retrieved_indices, docs,  r.get("gold_chunk_ids"))
         if rec is not None:
             recalls.append(rec)
-        rr = mrr(retrieved_indices, docs, r.get("gold_source_ids"), r.get("gold_chunk_ids"))
+        rr = mrr(retrieved_indices, docs,  r.get("gold_chunk_ids"))
         if rr is not None:
             mrrs.append(rr)
 
@@ -238,7 +244,6 @@ def main():
         print(f"Recall@{args.k}: n/a (missing gold ids in test set)")
     if mrrs:
         print(f"MRR@{args.k}:    {avg(mrrs):.4f} (n={len(mrrs)})")
-    else:
         print(f"MRR@{args.k}:    n/a (missing gold ids)")
     if f1s:
         print(f"Answer F1:        {avg(f1s):.4f} (n={len(f1s)})")

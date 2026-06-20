@@ -2,7 +2,7 @@
   "model": "Omartificial-Intelligence-Space/mmbert-base-arabic-nli",
   "normalize_embeddings": true,
   "metric": "inner_product",
-  "count": 6195,
+  "count": 5932,
   "dim": 768,
   "has_bm25": true
 }
