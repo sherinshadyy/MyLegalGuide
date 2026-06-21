@@ -68,6 +68,7 @@ function initPageData(){
   // Load dynamic lawyers preview on home / index.
   if(document.getElementById('lawyers') || document.getElementById('lawyersPreview')){
     applyRoleHomeView();
+    initHomeLawyerFilters();
     loadLawyers();
     updateAuthMenu();
   }
@@ -205,7 +206,7 @@ const dict = {
     slotDuplicate:"This slot is already in your list", slotPast:"Choose a future date and time", slotNeedDate:"Pick a date first",
     slotNeedTime:"Pick a time", slotAdded:"Slot added", chooseAvailableSlot:"Choose available slot",
     oneSlotPerLine:"One slot per line", saveAvailability:"Save availability", uploadDocs:"Upload documents",
-    lawyersPageTitle:"Personal Status Lawyers", lawyersPageSub:"Browse approved specialists, filter by specialty, gender, and consultation fee, then book a time that fits you.",
+    lawyersPageTitle:"Find a Lawyer", lawyersPageSub:"Search verified lawyers, filter by specialty, gender, and fee, then book a consultation.",
     filterSpecialty:"Specialty", filterGender:"Gender", allSpecialties:"All specialties", anyGender:"Any",
     minFee:"Min. lawyer fee from (EGP)", maxFee:"Max. lawyer fee up to (EGP)", applyFilters:"Apply filters", resetFilters:"Reset",
     lawyerProfilePageTitle:"Lawyer profile", backToLawyers:"← Back to lawyers", phoneLabelProfile:"Phone",
@@ -243,7 +244,11 @@ const dict = {
     reviewPromptHint:"Book a consultation and wait for your lawyer to confirm it. Then you can leave a star rating here.",
     submitReview:"Submit review", reviewSaved:"Thank you! Your review was saved.", reviewsCount:"reviews",
     rateStars:"Rate", outOf5:"out of 5",
-    openSlot:"open slot", openSlots:"open slots", browseAllLawyers:"Browse all lawyers", browseLawyersPreview:"Browse specialists by specialty, gender, and consultation fee.",
+    openSlot:"open slot", openSlots:"open slots", browseAllLawyers:"Browse all lawyers",
+    findLawyerTitle:"Find a Lawyer",
+    browseLawyersPreview:"Filter by specialty, gender, and consultation fee to find the right lawyer.",
+    filterLocation:"Location", filterExperience:"Experience", comingSoon:"Coming soon",
+    filtersComingSoon:"More filters coming soon — location, years of experience, and client ratings.",
     bookTitle:"Book a Consultation", chatBtn:"Chat", noLawyersMatch:"No lawyers match your filters. Try resetting filters.",
     genderNotSpecified:"Gender not specified", availableSlots:"available time slot(s)", remove:"Remove",
     suspend:"Suspend", delete:"Delete", approve:"Approve", sending:"Sending…", openDashboard:"Open Dashboard",
@@ -256,6 +261,7 @@ const dict = {
     voiceModelNotReady:"Voice model is still loading. Make sure the RAG API is running, wait about a minute, then try again.",
     voiceServerRequired:"Accurate Egyptian voice needs the RAG API running (backend/start-rag.ps1).",
     voiceTooShort:"Recording too short — speak for at least 2 seconds, then click the mic to stop.",
+    chatUploadDocument:"Upload document", chatUploadFormats:"TXT or PDF · scanned documents supported",
     publicProfileDetailsTitle:"Public profile details (clients see these)", officeLocation:"Office location",
     yearsExperience:"Years of experience", bookingOptionsClients:"Booking options (clients choose when booking)",
     phoneExamplePh:"e.g. 01012345678", yearsExperiencePh:"e.g. 12",
@@ -317,7 +323,7 @@ const dict = {
     slotDuplicate:"هذا الموعد موجود بالفعل", slotPast:"اختر تاريخاً ووقتاً في المستقبل", slotNeedDate:"اختر التاريخ أولاً",
     slotNeedTime:"اختر الوقت", slotAdded:"تمت إضافة الموعد", chooseAvailableSlot:"اختر موعداً متاحاً",
     oneSlotPerLine:"موعد واحد في كل سطر", saveAvailability:"حفظ المواعيد", uploadDocs:"رفع مستندات",
-    lawyersPageTitle:"محامو الأحوال الشخصية", lawyersPageSub:"تصفح المحامين المعتمدين، وفلتر حسب التخصص والجنس والرسوم، ثم احجز موعداً يناسبك.",
+    lawyersPageTitle:"ابحث عن محامي", lawyersPageSub:"ابحث عن محامين معتمدين، وفلتر حسب التخصص والجنس والرسوم، ثم احجز استشارة.",
     filterSpecialty:"التخصص", filterGender:"الجنس", allSpecialties:"كل التخصصات", anyGender:"أي",
     minFee:"أقل رسوم (جنيه)", maxFee:"أقصى رسوم (جنيه)", applyFilters:"تطبيق الفلاتر", resetFilters:"إعادة تعيين",
     lawyerProfilePageTitle:"ملف المحامي", backToLawyers:"← العودة للمحامين", phoneLabelProfile:"الهاتف",
@@ -355,7 +361,11 @@ const dict = {
     reviewPromptHint:"احجز استشارة وانتظر تأكيد المحامي. بعدها يمكنك ترك تقييم بالنجوم هنا.",
     submitReview:"إرسال التقييم", reviewSaved:"شكراً! تم حفظ تقييمك.", reviewsCount:"تقييم",
     rateStars:"تقييم", outOf5:"من 5",
-    openSlot:"موعد متاح", openSlots:"مواعيد متاحة", browseAllLawyers:"تصفح كل المحامين", browseLawyersPreview:"تصفح المتخصصين حسب التخصص والجنس ورسوم الاستشارة.",
+    openSlot:"موعد متاح", openSlots:"مواعيد متاحة", browseAllLawyers:"تصفح كل المحامين",
+    findLawyerTitle:"ابحث عن محامي",
+    browseLawyersPreview:"فلتر حسب التخصص والجنس ورسوم الاستشارة للعثور على المحامي المناسب.",
+    filterLocation:"الموقع", filterExperience:"الخبرة", comingSoon:"قريباً",
+    filtersComingSoon:"المزيد من الفلاتر قريباً — الموقع، سنوات الخبرة، وتقييمات العملاء.",
     bookTitle:"حجز استشارة", chatBtn:"محادثة", noLawyersMatch:"لا يوجد محامون مطابقون. جرّب إعادة تعيين الفلاتر.",
     genderNotSpecified:"الجنس غير محدد", availableSlots:"موعد/مواعيد متاحة", remove:"إزالة",
     suspend:"إيقاف", delete:"حذف", approve:"اعتماد", sending:"جاري الإرسال…", openDashboard:"فتح لوحة التحكم",
@@ -368,6 +378,7 @@ const dict = {
     voiceModelNotReady:"نموذج الصوت ما زال يُحمّل. تأكد أن خادم RAG يعمل، انتظر دقيقة، ثم حاول مرة أخرى.",
     voiceServerRequired:"للتعرف الدقيق على العامية المصرية يجب تشغيل خادم RAG (backend/start-rag.ps1).",
     voiceTooShort:"التسجيل قصير جداً — تحدث لمدة ثانيتين على الأقل ثم اضغط الميكروفون للإيقاف.",
+    chatUploadDocument:"رفع مستند", chatUploadFormats:"TXT أو PDF · المسح الضوئي مدعوم",
     publicProfileDetailsTitle:"تفاصيل الملف العام (يراها العملاء)", officeLocation:"موقع المكتب",
     yearsExperience:"سنوات الخبرة", bookingOptionsClients:"خيارات الحجز (يختارها العميل عند الحجز)",
     phoneExamplePh:"مثال: 01012345678", yearsExperiencePh:"مثال: 12",
@@ -976,6 +987,19 @@ function renderLawyersInto(container, lawyers, options){
   container.innerHTML = lawyers.map(l => renderLawyerCard(l, { compact: options && options.compact, canBook })).join('');
 }
 
+function initHomeLawyerFilters(){
+  const specialtySel = document.getElementById('filterSpecialty');
+  if(!specialtySel || !document.getElementById('lawyersPreview')) return;
+  populateSpecialtySelect(specialtySel, true);
+  fetch(apiUrl('/api/lawyers/meta')).then(r=>r.json()).then(res=>{
+    if(res.ok && Array.isArray(res.specialties) && res.specialties.length){
+      PERSONAL_STATUS_SPECIALTIES.length = 0;
+      res.specialties.forEach(s=>PERSONAL_STATUS_SPECIALTIES.push(s));
+      populateSpecialtySelect(specialtySel, true);
+    }
+  }).catch(()=>{});
+}
+
 function initLawyersPage(){
   const specialtySel = document.getElementById('filterSpecialty');
   populateSpecialtySelect(specialtySel, true);
@@ -992,10 +1016,16 @@ function initLawyersPage(){
 
 function applyLawyerFilters(){
   const grid = document.getElementById('lawyersDirectory');
-  if(!grid) return;
-  grid.innerHTML = `<p class="lawyers-empty">${escapeHtml(t('loadingLawyers'))}</p>`;
+  const preview = document.getElementById('lawyersPreview');
+  if(!grid && !preview) return;
+  if(grid) grid.innerHTML = `<p class="lawyers-empty">${escapeHtml(t('loadingLawyers'))}</p>`;
+  if(preview) preview.innerHTML = `<p class="lawyers-empty">${escapeHtml(t('loadingLawyers'))}</p>`;
   fetchLawyersList(buildLawyerFiltersQuery()).then(lawyers=>{
-    renderLawyersInto(grid, lawyers, { canBook: !isLawyerOrAdmin() });
+    if(grid) renderLawyersInto(grid, lawyers, { canBook: !isLawyerOrAdmin() });
+    if(preview){
+      const list = lawyers.slice(0, 3);
+      renderLawyersInto(preview, list, { compact: true, canBook: !isLawyerOrAdmin() });
+    }
   });
 }
 
@@ -1890,6 +1920,13 @@ function initAiVoiceInput(){
   }
 }
 
+function syncChatFullscreenState(){
+  const chat = document.getElementById('chatbot');
+  if(!chat) return;
+  const full = !chat.classList.contains('hidden') && chat.classList.contains('expanded');
+  document.body.classList.toggle('chat-fullscreen', full);
+}
+
 function toggleChat(){
   const chat = document.getElementById("chatbot");
   if(!chat) return;
@@ -1899,13 +1936,17 @@ function toggleChat(){
   if(opening){
     chat.classList.add("expanded");
     ensureAiConversation().then(()=> renderAiChatBody(aiChatHistory, true));
+  } else {
+    chat.classList.remove("expanded");
   }
+  syncChatFullscreenState();
 }
 
 function toggleChatExpand(){
   const chat = document.getElementById("chatbot");
   if(!chat) return;
   chat.classList.toggle("expanded");
+  syncChatFullscreenState();
 }
 
 function initAiChatInput(){
@@ -3559,9 +3600,10 @@ function loadLawyers(){
   const container = preview || legacyGrid;
   if(!container) return;
 
-  fetchLawyersList('').then(lawyers=>{
+  const query = document.getElementById('filterSpecialty') ? buildLawyerFiltersQuery() : '';
+  fetchLawyersList(query).then(lawyers=>{
     if(!lawyers.length){
-      container.innerHTML = `<p class="lawyers-empty">${escapeHtml(t('noLawyersAvailable'))}</p>`;
+      container.innerHTML = `<p class="lawyers-empty">${escapeHtml(preview ? t('noLawyersMatch') : t('noLawyersAvailable'))}</p>`;
       return;
     }
     const list = preview ? lawyers.slice(0, 3) : lawyers;

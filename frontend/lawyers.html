@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="fabulous.css"/>
   <link rel="stylesheet" href="lawyers.css"/>
 </head>
-<body data-page="lawyers" data-title-key="lawyersPageTitle">
+<body data-page="lawyers" data-title-key="findLawyerTitle">
 
 <nav class="navbar glass">
   <div class="logo">⚖ LegalGuide</div>
@@ -28,36 +28,53 @@
 </nav>
 
 <header class="lawyers-page-hero">
-  <h1 data-i18n="lawyersPageTitle">Personal Status Lawyers</h1>
-  <p data-i18n="lawyersPageSub">Browse approved specialists, filter by specialty, gender, and consultation fee, then book a time that fits you.</p>
+  <h1 data-i18n="findLawyerTitle">Find a Lawyer</h1>
+  <p data-i18n="lawyersPageSub">Search verified lawyers, filter by specialty, gender, and fee, then book a consultation.</p>
 </header>
 
 <section class="lawyers-filters container" aria-label="Lawyer filters">
-  <div>
-    <label for="filterSpecialty" data-i18n-label="filterSpecialty">Specialty</label>
-    <select id="filterSpecialty">
-      <option value="">All specialties</option>
-    </select>
+  <div class="lawyers-filters-fields">
+    <div>
+      <label for="filterSpecialty" data-i18n-label="filterSpecialty">Specialty</label>
+      <select id="filterSpecialty">
+        <option value="">All specialties</option>
+      </select>
+    </div>
+    <div>
+      <label for="filterGender" data-i18n-label="filterGender">Gender</label>
+      <select id="filterGender">
+        <option value="" data-i18n="anyGender">Any</option>
+        <option value="male" data-i18n="genderMale">Male</option>
+        <option value="female" data-i18n="genderFemale">Female</option>
+      </select>
+    </div>
+    <div>
+      <label for="filterMinPrice" data-i18n-label="minFee">Min. lawyer fee from (EGP)</label>
+      <input type="number" id="filterMinPrice" min="0" step="50" placeholder="e.g. 200">
+    </div>
+    <div>
+      <label for="filterMaxPrice" data-i18n-label="maxFee">Max. lawyer fee up to (EGP)</label>
+      <input type="number" id="filterMaxPrice" min="0" step="50" placeholder="e.g. 600">
+    </div>
+    <div class="filter-coming-soon">
+      <label for="filterLocation" data-i18n-label="filterLocation">Location</label>
+      <select id="filterLocation" disabled aria-disabled="true" title="Coming soon">
+        <option value="" data-i18n="comingSoon">Coming soon</option>
+      </select>
+    </div>
+    <div class="filter-coming-soon">
+      <label for="filterExperience" data-i18n-label="filterExperience">Experience</label>
+      <select id="filterExperience" disabled aria-disabled="true" title="Coming soon">
+        <option value="" data-i18n="comingSoon">Coming soon</option>
+      </select>
+    </div>
   </div>
-  <div>
-    <label for="filterGender" data-i18n-label="filterGender">Gender</label>
-    <select id="filterGender">
-      <option value="" data-i18n="anyGender">Any</option>
-      <option value="male" data-i18n="genderMale">Male</option>
-      <option value="female" data-i18n="genderFemale">Female</option>
-    </select>
-  </div>
-  <div>
-    <label for="filterMinPrice" data-i18n-label="minFee">Min. lawyer fee from (EGP)</label>
-    <input type="number" id="filterMinPrice" min="0" step="50" placeholder="e.g. 200">
-  </div>
-  <div>
-    <label for="filterMaxPrice" data-i18n-label="maxFee">Max. lawyer fee up to (EGP)</label>
-    <input type="number" id="filterMaxPrice" min="0" step="50" placeholder="e.g. 600">
-  </div>
-  <div class="lawyers-filters-actions">
-    <button type="button" onclick="applyLawyerFilters()" data-i18n="applyFilters">Apply filters</button>
-    <button type="button" onclick="resetLawyerFilters()" style="background:#E4D9CC;color:#2C2419" data-i18n="resetFilters">Reset</button>
+  <div class="lawyers-filters-footer">
+    <p class="filters-coming-soon-note" data-i18n="filtersComingSoon">More filters coming soon — location, years of experience, and client ratings.</p>
+    <div class="lawyers-filters-actions">
+      <button type="button" onclick="applyLawyerFilters()" data-i18n="applyFilters">Apply filters</button>
+      <button type="button" class="lawyers-filters-reset" onclick="resetLawyerFilters()" data-i18n="resetFilters">Reset</button>
+    </div>
   </div>
 </section>
 

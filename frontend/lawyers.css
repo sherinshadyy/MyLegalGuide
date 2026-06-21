@@ -24,10 +24,26 @@
   border:1px solid #E4D9CC;
   border-radius:16px;
   box-shadow:0 8px 24px rgba(44,36,25,.06);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.lawyers-filters-fields{
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
-  gap:12px;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:12px 16px;
   align-items:end;
+}
+
+.lawyers-filters-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px 20px;
+  flex-wrap:wrap;
+  padding-top:14px;
+  border-top:1px solid #E4D9CC;
 }
 
 .lawyers-filters label{
@@ -47,7 +63,59 @@
 .lawyers-filters-actions{
   display:flex;
   gap:8px;
-  flex-wrap:wrap;
+  flex-shrink:0;
+  margin-left:auto;
+}
+
+.lawyers-filters-reset{
+  background:#E4D9CC;
+  color:#2C2419;
+}
+
+.lawyers-filters-reset:hover{
+  background:#D9CCBA;
+}
+
+@media (max-width:768px){
+  .lawyers-filters-fields{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width:520px){
+  .lawyers-filters-fields{
+    grid-template-columns:1fr;
+  }
+
+  .lawyers-filters-footer{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .lawyers-filters-actions{
+    margin-left:0;
+    justify-content:flex-end;
+  }
+}
+
+.filter-coming-soon select:disabled,
+.filter-coming-soon input:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+  background:#F5F0E8;
+}
+
+.filters-coming-soon-note{
+  margin:0;
+  flex:1;
+  min-width:180px;
+  font-size:12px;
+  color:#8B7355;
+  line-height:1.45;
+}
+
+.home-lawyers-filters{
+  margin-bottom:20px;
 }
 
 .lawyers-directory{

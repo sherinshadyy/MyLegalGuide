@@ -79,11 +79,58 @@
 <section id="lawyers" class="container">
   <div class="lawyers-preview-bar">
     <div>
-      <h2 class="title" data-key="lawyers">Personal Status Lawyers</h2>
-      <p style="color:#6B5E50;margin:6px 0 0" data-i18n="browseLawyersPreview">Browse specialists by specialty, gender, and consultation fee.</p>
+      <h2 class="title" data-key="findLawyerTitle">Find a Lawyer</h2>
+      <p style="color:#6B5E50;margin:6px 0 0" data-i18n="browseLawyersPreview">Filter by specialty, gender, and consultation fee to find the right lawyer.</p>
     </div>
     <a href="lawyers.html"><button type="button" data-i18n="browseAllLawyers">Browse all lawyers</button></a>
   </div>
+
+  <section class="lawyers-filters home-lawyers-filters" aria-label="Lawyer search filters">
+    <div class="lawyers-filters-fields">
+      <div>
+        <label for="filterSpecialty" data-i18n-label="filterSpecialty">Specialty</label>
+        <select id="filterSpecialty">
+          <option value="">All specialties</option>
+        </select>
+      </div>
+      <div>
+        <label for="filterGender" data-i18n-label="filterGender">Gender</label>
+        <select id="filterGender">
+          <option value="" data-i18n="anyGender">Any</option>
+          <option value="male" data-i18n="genderMale">Male</option>
+          <option value="female" data-i18n="genderFemale">Female</option>
+        </select>
+      </div>
+      <div>
+        <label for="filterMinPrice" data-i18n-label="minFee">Min. lawyer fee from (EGP)</label>
+        <input type="number" id="filterMinPrice" min="0" step="50" placeholder="e.g. 200">
+      </div>
+      <div>
+        <label for="filterMaxPrice" data-i18n-label="maxFee">Max. lawyer fee up to (EGP)</label>
+        <input type="number" id="filterMaxPrice" min="0" step="50" placeholder="e.g. 600">
+      </div>
+      <div class="filter-coming-soon">
+        <label for="filterLocation" data-i18n-label="filterLocation">Location</label>
+        <select id="filterLocation" disabled aria-disabled="true" title="Coming soon">
+          <option value="" data-i18n="comingSoon">Coming soon</option>
+        </select>
+      </div>
+      <div class="filter-coming-soon">
+        <label for="filterExperience" data-i18n-label="filterExperience">Experience</label>
+        <select id="filterExperience" disabled aria-disabled="true" title="Coming soon">
+          <option value="" data-i18n="comingSoon">Coming soon</option>
+        </select>
+      </div>
+    </div>
+    <div class="lawyers-filters-footer">
+      <p class="filters-coming-soon-note" data-i18n="filtersComingSoon">More filters coming soon — location, years of experience, and client ratings.</p>
+      <div class="lawyers-filters-actions">
+        <button type="button" onclick="applyLawyerFilters()" data-i18n="applyFilters">Apply filters</button>
+        <button type="button" class="lawyers-filters-reset" onclick="resetLawyerFilters()" data-i18n="resetFilters">Reset</button>
+      </div>
+    </div>
+  </section>
+
   <div id="lawyersPreview" class="lawyers-directory-grid lawyers-preview-grid"></div>
 </section>
 
@@ -126,11 +173,14 @@
       <div class="chat-body" id="chatBody"></div>
 
       <div class="chat-toolbar">
-        <label class="chat-upload-label" title="Upload legal document (TXT or PDF)">
-          📎
+        <label class="chat-upload-btn">
+          <span class="chat-upload-icon" aria-hidden="true">📎</span>
+          <span class="chat-upload-text-wrap">
+            <span class="chat-upload-text" data-i18n="chatUploadDocument">Upload document</span>
+            <span class="chat-upload-formats" data-i18n="chatUploadFormats">TXT or PDF · scanned documents supported</span>
+          </span>
           <input type="file" id="chatDocUpload" accept=".txt,.pdf,text/plain,application/pdf" hidden onchange="uploadLegalDocument(event)">
         </label>
-        <span class="chat-toolbar-hint">TXT / PDF (مسحوح مدعوم)</span>
       </div>
 
       <div class="chat-input">

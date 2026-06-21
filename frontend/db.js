@@ -49,6 +49,13 @@ function toDateOnly(value) {
   return s.length >= 10 ? s.slice(0, 10) : s;
 }
 
+function toMysqlDatetime(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 async function ensureDatabaseExists() {
   const cfg = mysqlConfig();
   const conn = await mysql.createConnection({
@@ -243,7 +250,7 @@ function rowToUser(row) {
 
 function userToRow(u) {
   return [
-    u.createdAt || null,
+    toMysqlDatetime(u.createdAt),
     u.name || '',
     String(u.email || '').toLowerCase(),
     u.phone || '',
@@ -262,13 +269,13 @@ function userToRow(u) {
     JSON.stringify(u.documents || []),
     u.lawyerStatus || '',
     u.isActive === false ? 0 : 1,
-    u.deletedAt || null,
+    toMysqlDatetime(u.deletedAt),
     u.location || '',
     u.yearsOfExperience ?? null,
     u.consultationDuration ?? null,
     JSON.stringify(u.bookingOptions || []),
     u.rejectionReason || '',
-    u.rejectionAt || null,
+    toMysqlDatetime(u.rejectionAt),
   ];
 }
 
@@ -298,14 +305,14 @@ function bookingToRow(b) {
     b.lawyerEmail || '',
     b.name || '',
     b.email || '',
-    b.date || null,
+    toDateOnly(b.date),
     b.time || '',
     b.note || '',
     b.meetingType || '',
     b.status || '',
     JSON.stringify(b.messages || []),
-    b.createdAt || null,
-    b.actedAt || null,
+    toMysqlDatetime(b.createdAt),
+    toMysqlDatetime(b.actedAt),
     JSON.stringify(b.chatReadAt || {}),
   ];
 }
@@ -339,8 +346,8 @@ function conversationToRow(c) {
     String(c.userEmail || '').toLowerCase(),
     c.title || '',
     JSON.stringify(c.messages || []),
-    c.createdAt || null,
-    c.updatedAt || c.createdAt || null,
+    toMysqlDatetime(c.createdAt),
+    toMysqlDatetime(c.updatedAt || c.createdAt),
   ];
 }
 
@@ -367,8 +374,8 @@ function reviewToRow(r) {
     r.rating ?? null,
     r.comment || '',
     r.bookingId || '',
-    r.createdAt || null,
-    r.updatedAt || r.createdAt || null,
+    toMysqlDatetime(r.createdAt),
+    toMysqlDatetime(r.updatedAt || r.createdAt),
   ];
 }
 
@@ -462,7 +469,7 @@ async function saveAllState(state) {
           a.action || '',
           a.targetEmail || '',
           a.details || '',
-          a.at || new Date().toISOString(),
+          toMysqlDatetime(a.at || new Date()),
         ]
       );
     }
@@ -497,7 +504,7 @@ async function saveAllState(state) {
 }
 
 async function insertContact({ name, email, message, createdAt }) {
-  const at = createdAt || new Date().toISOString();
+  const at = toMysqlDatetime(createdAt || new Date());
   const [result] = await pool.query(
     'INSERT INTO contacts (name, email, message, created_at, is_read) VALUES (?, ?, ?, ?, 0)',
     [String(name || '').trim(), String(email || '').trim(), String(message || '').trim(), at]
@@ -507,7 +514,7 @@ async function insertContact({ name, email, message, createdAt }) {
     name: String(name || '').trim(),
     email: String(email || '').trim(),
     message: String(message || '').trim(),
-    createdAt: at,
+    createdAt: at ? toIso(at) : new Date().toISOString(),
     isRead: false,
   };
 }
