@@ -205,6 +205,8 @@ const dict = {
     slotMorning:"Morning (9–12)", slotAfternoon:"Afternoon (2–5)", slotListEmpty:"No slots added yet. Add at least one so clients can book.",
     slotDuplicate:"This slot is already in your list", slotPast:"Choose a future date and time", slotNeedDate:"Pick a date first",
     slotNeedTime:"Pick a time", slotAdded:"Slot added", chooseAvailableSlot:"Choose available slot",
+    availabilitySavedPending:"Availability saved — open Admin → Pending approvals to review this lawyer",
+    availabilitySavedLive:"Availability saved — clients can book these times now",
     oneSlotPerLine:"One slot per line", saveAvailability:"Save availability", uploadDocs:"Upload documents",
     lawyersPageTitle:"Find a Lawyer", lawyersPageSub:"Search verified lawyers, filter by specialty, gender, and fee, then book a consultation.",
     filterSpecialty:"Specialty", filterGender:"Gender", allSpecialties:"All specialties", anyGender:"Any",
@@ -322,6 +324,8 @@ const dict = {
     slotMorning:"صباحاً (9–12)", slotAfternoon:"بعد الظهر (2–5)", slotListEmpty:"لم تُضف مواعيد بعد. أضف موعداً واحداً على الأقل ليتمكن العملاء من الحجز.",
     slotDuplicate:"هذا الموعد موجود بالفعل", slotPast:"اختر تاريخاً ووقتاً في المستقبل", slotNeedDate:"اختر التاريخ أولاً",
     slotNeedTime:"اختر الوقت", slotAdded:"تمت إضافة الموعد", chooseAvailableSlot:"اختر موعداً متاحاً",
+    availabilitySavedPending:"تم حفظ المواعيد — راجع المحامي من الإدارة → الموافقات المعلقة",
+    availabilitySavedLive:"تم حفظ المواعيد — يمكن للعملاء الحجز الآن",
     oneSlotPerLine:"موعد واحد في كل سطر", saveAvailability:"حفظ المواعيد", uploadDocs:"رفع مستندات",
     lawyersPageTitle:"ابحث عن محامي", lawyersPageSub:"ابحث عن محامين معتمدين، وفلتر حسب التخصص والجنس والرسوم، ثم احجز استشارة.",
     filterSpecialty:"التخصص", filterGender:"الجنس", allSpecialties:"كل التخصصات", anyGender:"أي",
@@ -3384,10 +3388,10 @@ function saveAccountProfile(){
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify({ name })
   })
-  .then(r=>r.json())
-  .then(res=>{
+  .then(async (r)=>{
+    const res = await parseApiResponse(r);
     if(res.ok){
-      syncLocalUser(res.user);
+      syncLocalUser(res.user || {});
       loadAccountProfile();
       toast('Profile saved');
     } else toast(res.error || 'Failed to save');
@@ -3427,10 +3431,10 @@ async function uploadAccountProfilePicture(){
     });
     const res = await parseApiResponse(response);
     if(res.ok){
-      syncLocalUser(res.user);
+      syncLocalUser(res.user || {});
       const preview = document.getElementById('accountProfilePreview');
       if(preview){
-        preview.src = res.user && res.user.profilePic ? res.user.profilePic : data;
+        preview.src = (res.user && res.user.profilePic) || data;
         preview.classList.remove('hidden');
       }
       input.value = '';
@@ -3527,7 +3531,12 @@ async function saveLawyerProfile(){
         setLawyerSlotsFromUser(res.user);
         fillLawyerAvailabilityForm(res.user);
       }
-      toast('Availability saved');
+      const st = String((res.user && res.user.lawyerStatus) || getCurrentUserObj()?.lawyerStatus || '').toLowerCase();
+      if(st === 'approved'){
+        toast(t('availabilitySavedLive'));
+      } else {
+        toast(t('availabilitySavedPending'));
+      }
     } else {
       toast(res.error || 'Failed to update');
     }
@@ -4156,6 +4165,10 @@ function renderAdminPending(res){
   }
   box.innerHTML = `<div class="admin-pending-list">${apps.map(a=>{
     const fees = formatPriceRange({ feeMin: a.feeMin, feeMax: a.feeMax });
+    const slotCount = Array.isArray(a.availabilitySlots) ? a.availabilitySlots.length : 0;
+    const slotPreview = slotCount
+      ? a.availabilitySlots.slice(0, 4).map(s => escapeHtml(formatSlotLabel(s))).join(' · ')
+      : '';
     const pic = a.profilePic
       ? lawyerAvatarHtml({ name: a.name, profilePic: a.profilePic }, 'admin')
       : `<div class="lawyer-avatar lawyer-avatar--admin">${escapeHtml(lawyerInitials(a.name))}</div>`;
@@ -4172,7 +4185,9 @@ function renderAdminPending(res){
             <div><dt>${escapeHtml(t('specialty'))}</dt><dd>${escapeHtml(a.specialty || '-')}</dd></div>
             <div><dt>${escapeHtml(t('priceRange'))}</dt><dd>${escapeHtml(fees)}</dd></div>
             ${a.gender ? `<div><dt>${escapeHtml(t('genderShown'))}</dt><dd>${escapeHtml(a.gender)}</dd></div>` : ''}
+            <div><dt>${escapeHtml(t('availabilitySlots'))}</dt><dd>${slotCount ? `${slotCount} ${slotCount === 1 ? escapeHtml(t('openSlot')) : escapeHtml(t('openSlots'))}` : escapeHtml(t('noSlotsYet'))}</dd></div>
           </dl>
+          ${slotPreview ? `<div class="admin-pending-summary"><strong>${escapeHtml(t('availabilitySlots'))}:</strong> ${slotPreview}${slotCount > 4 ? '…' : ''}</div>` : ''}
           ${a.description ? `<div class="admin-pending-summary"><strong>${escapeHtml(t('shortDesc'))}:</strong> ${escapeHtml(a.description)}</div>` : ''}
           ${a.practiceDetails ? `<div class="admin-pending-practice"><strong>${escapeHtml(t('practiceDetails'))}:</strong> ${escapeHtml(a.practiceDetails)}</div>` : ''}
           <div class="admin-pending-docs"><strong>${escapeHtml(t('adminDocuments'))}:</strong> ${docs}</div>

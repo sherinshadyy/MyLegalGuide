@@ -87,7 +87,7 @@ async function ensureSchema() {
       role VARCHAR(32) NOT NULL DEFAULT 'User',
       specialty VARCHAR(128) DEFAULT '',
       description TEXT,
-      profile_pic TEXT,
+      profile_pic MEDIUMTEXT,
       gender VARCHAR(16) DEFAULT '',
       consultation_fee INT DEFAULT NULL,
       fee_min INT DEFAULT NULL,
@@ -108,6 +108,11 @@ async function ensureSchema() {
       INDEX (phone)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+  try {
+    await p.query('ALTER TABLE users MODIFY profile_pic MEDIUMTEXT');
+  } catch (_e) {
+    /* column may already be MEDIUMTEXT */
+  }
   await p.query(`
     CREATE TABLE IF NOT EXISTS admin_actions (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -540,6 +545,51 @@ async function markContactRead(id) {
   return result.affectedRows > 0;
 }
 
+async function updateUserByEmail(email, fields) {
+  const normalized = String(email || '').toLowerCase().trim();
+  if (!normalized) return false;
+
+  const columnMap = {
+    name: { col: 'name', val: (v) => String(v || '').trim() },
+    profilePic: { col: 'profile_pic', val: (v) => v || '' },
+    specialty: { col: 'specialty', val: (v) => String(v || '').trim() },
+    description: { col: 'description', val: (v) => String(v || '').trim() },
+    practiceDetails: { col: 'practice_details', val: (v) => String(v || '').trim() },
+    gender: { col: 'gender', val: (v) => String(v || '').trim() },
+    consultationFee: { col: 'consultation_fee', val: (v) => v ?? null },
+    feeMin: { col: 'fee_min', val: (v) => v ?? null },
+    feeMax: { col: 'fee_max', val: (v) => v ?? null },
+    availability: { col: 'availability', val: (v) => String(v || '').trim() },
+    availabilitySlots: { col: 'availability_slots', val: (v) => JSON.stringify(Array.isArray(v) ? v : []) },
+    documents: { col: 'documents', val: (v) => JSON.stringify(Array.isArray(v) ? v : []) },
+    lawyerStatus: { col: 'lawyer_status', val: (v) => String(v || '').trim() },
+    phone: { col: 'phone', val: (v) => String(v || '').trim() },
+    location: { col: 'location', val: (v) => String(v || '').trim() },
+    yearsOfExperience: { col: 'years_of_experience', val: (v) => v ?? null },
+    consultationDuration: { col: 'consultation_duration', val: (v) => v ?? null },
+    bookingOptions: { col: 'booking_options', val: (v) => JSON.stringify(Array.isArray(v) ? v : []) },
+    rejectionReason: { col: 'rejection_reason', val: (v) => String(v || '').trim() },
+    rejectionAt: { col: 'rejection_at', val: (v) => toMysqlDatetime(v) },
+  };
+
+  const sets = [];
+  const values = [];
+  Object.keys(fields || {}).forEach((key) => {
+    const spec = columnMap[key];
+    if (!spec || fields[key] === undefined) return;
+    sets.push(`${spec.col} = ?`);
+    values.push(spec.val(fields[key]));
+  });
+  if (!sets.length) return true;
+
+  values.push(normalized);
+  const [result] = await pool.query(
+    `UPDATE users SET ${sets.join(', ')} WHERE LOWER(email) = ?`,
+    values
+  );
+  return result.affectedRows > 0;
+}
+
 async function exportJsonBackup(filePath) {
   const state = await loadAllState();
   const contacts = await listContacts({ limit: 500 });
@@ -556,6 +606,7 @@ module.exports = {
   migrateFromJsonIfNeeded,
   loadAllState,
   saveAllState,
+  updateUserByEmail,
   insertContact,
   listContacts,
   markContactRead,

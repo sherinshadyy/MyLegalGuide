@@ -50,9 +50,14 @@ function slotAllowed(date, time, allowedSlots){
   });
 }
 
-function saveState(){
-  db.saveAllState({ users, bookings, adminActions, aiConversations, lawyerReviews })
-    .catch((e) => console.error('saveState', e));
+async function saveState(){
+  try {
+    await db.saveAllState({ users, bookings, adminActions, aiConversations, lawyerReviews });
+    return true;
+  } catch (e) {
+    console.error('saveState', e);
+    return false;
+  }
 }
 
 async function loadState(){
@@ -306,10 +311,32 @@ function publicLawyerFields(u, availabilitySlotsOverride){
   };
 }
 
+function isFutureLawyerSlot(date, time){
+  const d = new Date(`${date}T${time}:00`);
+  return !Number.isNaN(d.getTime()) && d.getTime() > Date.now() - 60000;
+}
+
+function normalizeAvailabilitySlotsInput(slots){
+  if(!Array.isArray(slots)) return undefined;
+  const flat = [];
+  slots.forEach(s=>{
+    String(s || '').split(/[,;\n\r]+/).forEach(part=>{
+      const raw = part.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
+      if(raw) flat.push(raw);
+    });
+  });
+  return flat.map(raw=>{
+    const p = parseLawyerSlotServer(raw);
+    if(p.date && p.time) return canonicalSlotKey(p.date, p.time);
+    return raw;
+  }).filter(Boolean).slice(0, 100);
+}
+
 function filterAvailableSlotsForLawyer(u){
   return (Array.isArray(u.availabilitySlots) ? u.availabilitySlots : []).filter(slot => {
     const p = parseLawyerSlotServer(slot);
     if(!p.date || !p.time) return false;
+    if(!isFutureLawyerSlot(p.date, p.time)) return false;
     return !bookings.some(b =>
       (b.lawyerEmail || '').toLowerCase() === (u.email || '').toLowerCase() &&
       canonicalSlotKey(b.date, b.time) === canonicalSlotKey(p.date, p.time) &&
@@ -924,7 +951,7 @@ app.get('/api/lawyers/:email/reviews', (req, res) => {
   res.json({ ok: true, stats, reviews });
 });
 
-app.post('/api/lawyers/:email/reviews', verifyToken, (req, res) => {
+app.post('/api/lawyers/:email/reviews', verifyToken, async (req, res) => {
   const lawyerEmail = String(req.params.email || '').trim().toLowerCase();
   const userEmail = String(req.user.email || '').toLowerCase();
   const role = String(req.user.role || '').toLowerCase();
@@ -980,7 +1007,7 @@ app.post('/api/lawyers/:email/reviews', verifyToken, (req, res) => {
     };
     lawyerReviews.push(review);
   }
-  if(!saveState()) return res.status(500).json({ ok: false, error: 'Could not save review' });
+  if(!(await saveState())) return res.status(500).json({ ok: false, error: 'Could not save review' });
 
   const stats = getLawyerReviewStats(lawyerEmail);
   res.json({
@@ -1041,7 +1068,7 @@ function logAdminAction(adminEmail, action, targetEmail, details){
 }
 
 // Signup / login (server-backed)
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
   const { name, email, phone, password, role, specialty, description, practiceDetails, feeMin, feeMax, consultationFee, gender, documents } = req.body || {};
   const nameClean = String(name || '').trim();
   const emailClean = String(email || '').trim().toLowerCase();
@@ -1093,7 +1120,10 @@ app.post('/api/signup', (req, res) => {
     createdAt: new Date().toISOString()
   };
   users.push(user);
-  saveState();
+  if(!(await saveState())){
+    users.pop();
+    return res.status(500).json({ error: 'Could not create account. Please try again.' });
+  }
   const token = generateToken(user);
   res.json({
     ok: true,
@@ -1131,24 +1161,35 @@ app.get('/api/me', verifyToken, (req, res) => {
   });
 });
 
-app.put('/api/account/profile', verifyToken, (req, res) => {
+app.put('/api/account/profile', verifyToken, async (req, res) => {
   try{
     const user = req.userRecord || findUserByEmail(req.user.email);
     if(!user) return res.status(404).json({ ok:false, error: 'User not found' });
     const { name, profilePic } = req.body || {};
+    const updates = {};
+
     if(name !== undefined){
       const nameClean = String(name || '').trim();
       if(!nameClean) return res.status(400).json({ ok:false, error: 'Name is required' });
-      user.name = nameClean;
+      updates.name = nameClean;
     }
     if(profilePic !== undefined){
       const pic = sanitizeProfilePic(profilePic);
       if(pic === null) return res.status(400).json({ ok:false, error: 'Profile picture is too large or invalid. Try a smaller image.' });
-      user.profilePic = pic;
+      updates.profilePic = pic;
     }
-    if(!saveState()){
+    if(!Object.keys(updates).length){
+      return res.json({ ok:true, user: accountUserFields(user) });
+    }
+
+    const saved = await db.updateUserByEmail(user.email, updates);
+    if(!saved){
       return res.status(500).json({ ok:false, error: 'Could not save profile to disk' });
     }
+
+    if(updates.name !== undefined) user.name = updates.name;
+    if(updates.profilePic !== undefined) user.profilePic = updates.profilePic;
+
     res.json({ ok:true, user: accountUserFields(user) });
   } catch(err){
     console.error('PUT /api/account/profile', err);
@@ -1187,7 +1228,7 @@ app.put('/api/account/password', verifyToken, (req, res) => {
   res.json({ ok:true });
 });
 
-app.put('/api/lawyer/profile', verifyToken, (req, res) => {
+app.put('/api/lawyer/profile', verifyToken, async (req, res) => {
   try{
   const user = findUserByEmail(req.user.email);
   if(!user) return res.status(404).json({ ok:false, error: 'User not found' });
@@ -1195,59 +1236,50 @@ app.put('/api/lawyer/profile', verifyToken, (req, res) => {
     return res.status(403).json({ ok:false, error: 'Only lawyers allowed' });
   }
   const { specialty, description, practiceDetails, availability, availabilitySlots, documents, gender, consultationFee, feeMin, feeMax, location, yearsOfExperience, consultationDuration, bookingOptions, phone } = req.body || {};
-  if(specialty !== undefined) user.specialty = String(specialty || user.specialty || 'General Personal Status').trim();
-  if(description !== undefined) user.description = String(description || '').trim();
-  if(practiceDetails !== undefined) user.practiceDetails = String(practiceDetails || '').trim();
+  const updates = {};
+
+  if(specialty !== undefined) updates.specialty = String(specialty || user.specialty || 'General Personal Status').trim();
+  if(description !== undefined) updates.description = String(description || '').trim();
+  if(practiceDetails !== undefined) updates.practiceDetails = String(practiceDetails || '').trim();
   if(gender !== undefined){
     const g = String(gender || '').trim().toLowerCase();
-    user.gender = (g === 'male' || g === 'female') ? g : '';
+    updates.gender = (g === 'male' || g === 'female') ? g : '';
   }
   if(feeMin !== undefined || feeMax !== undefined || consultationFee !== undefined){
     const fees = normalizeFeeRange(
       feeMin !== undefined ? feeMin : (consultationFee !== undefined ? consultationFee : user.feeMin),
       feeMax !== undefined ? feeMax : user.feeMax
     );
-    user.feeMin = fees.feeMin;
-    user.feeMax = fees.feeMax;
-    user.consultationFee = fees.feeMin;
+    updates.feeMin = fees.feeMin;
+    updates.feeMax = fees.feeMax;
+    updates.consultationFee = fees.feeMin;
   }
-  if(availability !== undefined) user.availability = String(availability || '').trim();
+  if(availability !== undefined) updates.availability = String(availability || '').trim();
   if(Array.isArray(availabilitySlots)){
-    const flat = [];
-    availabilitySlots.forEach(s=>{
-      String(s || '').split(/[,;\n\r]+/).forEach(part=>{
-        const raw = part.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
-        if(raw) flat.push(raw);
-      });
-    });
-    user.availabilitySlots = flat.map(raw=>{
-      const p = parseLawyerSlotServer(raw);
-      if(p.date && p.time) return canonicalSlotKey(p.date, p.time);
-      return raw;
-    }).filter(Boolean).slice(0, 100);
+    updates.availabilitySlots = normalizeAvailabilitySlotsInput(availabilitySlots);
   }
   if(Array.isArray(documents)){
-    user.documents = documents.map(d=>String(d || '').trim()).filter(Boolean).slice(0, 30);
+    updates.documents = documents.map(d=>String(d || '').trim()).filter(Boolean).slice(0, 30);
   }
-  if(location !== undefined) user.location = String(location || '').trim().slice(0, 200);
+  if(location !== undefined) updates.location = String(location || '').trim().slice(0, 200);
   if(yearsOfExperience !== undefined){
     const raw = typeof yearsOfExperience === 'number'
       ? String(yearsOfExperience)
       : String(yearsOfExperience ?? '').trim();
-    if(raw === '') user.yearsOfExperience = null;
+    if(raw === '') updates.yearsOfExperience = null;
     else {
       const y = parseInt(raw, 10);
-      user.yearsOfExperience = Number.isFinite(y) && y >= 0 ? Math.min(80, y) : null;
+      updates.yearsOfExperience = Number.isFinite(y) && y >= 0 ? Math.min(80, y) : null;
     }
   }
   if(consultationDuration !== undefined){
     const d = typeof consultationDuration === 'number'
       ? consultationDuration
       : (String(consultationDuration ?? '').trim() === '' ? '' : consultationDuration);
-    user.consultationDuration = normalizeConsultationDuration(d);
+    updates.consultationDuration = normalizeConsultationDuration(d);
   }
   if(bookingOptions !== undefined){
-    user.bookingOptions = normalizeBookingOptions(bookingOptions);
+    updates.bookingOptions = normalizeBookingOptions(bookingOptions);
   }
   if(phone !== undefined){
     const p = normalizePhone(phone);
@@ -1258,24 +1290,47 @@ app.put('/api/lawyer/profile', verifyToken, (req, res) => {
       const taken = users.some(u => u !== user && normalizePhone(u.phone) === p);
       if(taken) return res.status(400).json({ ok:false, error: 'Phone number already in use' });
     }
-    user.phone = p;
+    updates.phone = p;
   }
+
   const practiceReviewTouched =
     specialty !== undefined || description !== undefined || practiceDetails !== undefined ||
     gender !== undefined || feeMin !== undefined || feeMax !== undefined || consultationFee !== undefined;
   if(practiceReviewTouched){
     const st = String(user.lawyerStatus || '').toLowerCase();
     if(st === 'approved' || st === 'rejected' || !st){
-      user.lawyerStatus = 'pending';
-      if(st === 'approved'){
-        user.rejectionReason = '';
-        user.rejectionAt = '';
+      updates.lawyerStatus = 'pending';
+      if(st === 'approved' || st === 'rejected'){
+        updates.rejectionReason = '';
+        updates.rejectionAt = null;
       }
     }
   }
-  if(!saveState()){
+
+  const slotsSaved = Array.isArray(availabilitySlots) && availabilitySlots.length > 0;
+  if(slotsSaved){
+    const st = String((updates.lawyerStatus || user.lawyerStatus) || '').toLowerCase();
+    if(st === 'rejected' || !st){
+      updates.lawyerStatus = 'pending';
+      updates.rejectionReason = '';
+      updates.rejectionAt = null;
+    }
+  }
+
+  if(!Object.keys(updates).length){
+    return res.json({
+      ok:true,
+      user: { ...accountUserFields(user), ...lawyerAccountExtras(user) }
+    });
+  }
+
+  const saved = await db.updateUserByEmail(user.email, updates);
+  if(!saved){
     return res.status(500).json({ ok:false, error: 'Could not save profile' });
   }
+
+  Object.assign(user, updates);
+
   res.json({
     ok:true,
     user: { ...accountUserFields(user), ...lawyerAccountExtras(user) }
@@ -1493,21 +1548,27 @@ app.get('/api/admin/lawyer-applications', verifyToken, requireAdmin, (_req, res)
       feeMax: lawyerFeeMax(u),
       profilePic: u.profilePic || '',
       documents: Array.isArray(u.documents) ? u.documents : [],
+      availabilitySlots: filterAvailableSlotsForLawyer(u),
       createdAt: u.createdAt || null
     }));
   res.json({ ok: true, applications: pending });
 });
 
-app.post('/api/admin/lawyers/:email/approve', verifyToken, requireAdmin, (req, res) => {
+app.post('/api/admin/lawyers/:email/approve', verifyToken, requireAdmin, async (req, res) => {
   const email = String(req.params.email || '').toLowerCase();
   const user = findUserByEmail(email);
   if(!user || user.deletedAt) return res.status(404).json({ ok:false, error: 'User not found' });
   if(!(user.role || '').toLowerCase().startsWith('law')) return res.status(400).json({ ok:false, error: 'Not a lawyer account' });
+  const saved = await db.updateUserByEmail(user.email, {
+    lawyerStatus: 'approved',
+    rejectionReason: '',
+    rejectionAt: null,
+  });
+  if(!saved) return res.status(500).json({ ok:false, error: 'Could not save approval' });
   user.lawyerStatus = 'approved';
   user.isActive = true;
   user.rejectionReason = '';
   user.rejectionAt = '';
-  saveState();
   logAdminAction(req.user.email, 'approve_lawyer', user.email, '');
   res.json({ ok: true, user: { email: user.email, lawyerStatus: user.lawyerStatus, rejectionReason: '' } });
 });
